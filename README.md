@@ -10,9 +10,16 @@ Seeed XIAO ESP32-C3 through a Waveshare e-Paper Driver HAT rev2.3.
 | Toolchain, build, flash | Working |
 | Panel power (PWR on D4) | Working — required, see below |
 | Rendering over SPI | Working |
-| Deep sleep, timer wake | Working — 60 s cycle |
+| Deep sleep, timer wake | Working at `a505344`, not in the current build |
 | BUSY feedback | Abandoned — unusable on this hardware |
 | Button wake | Wired to D3, not yet enabled |
+| Layout prototype | Current build — 8 demo pages on a 15 s cycle |
+
+The build on `main` is the layout prototype: it stays awake and cycles through
+eight pages exploring type, tone, symbols, density and charts, to work out what
+reads well on this panel. See `plans/display-prototype.md`. The timer-driven
+sleep loop is preserved in commit `a505344` and comes back once a layout is
+chosen.
 
 ## Hardware
 
@@ -90,6 +97,13 @@ that is what `_Update_Full : 1` means. Do not try to re-enable polling.
 
 **A pin toggling on a ~20 ms period is 50 Hz mains hum**, i.e. floating. Single
 reads of such a pin are coin flips.
+
+**The bundled fonts are ASCII 0x20–0x7E and nothing more.** No degree sign, no
+arrows, no accents, no box drawing. Every symbol has to be drawn as primitives.
+
+**Do not stroke arcs by walking the angle.** Plotting points around a circle
+leaves rounding pinholes that read as moiré at any thickness above one pixel.
+Scan convert the annulus instead — see `drawArc` in `src/DemoPages.cpp`.
 
 **Intermittent Dupont crimps** produced most of the false leads during bring-up:
 code that worked once and never again, with no change in between. Solder for
