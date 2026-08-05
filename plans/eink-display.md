@@ -12,13 +12,17 @@ even in the other, counted from the silkscreened pin 1.
 | ---------- | ------- | ------------- | ---- | ---- |
 | VCC        | 1       | odd row, 1st  | 3V3  | —    |
 | GND        | 6       | even row, 3rd | GND  | —    |
-| RST        | 11      | odd row, 6th  | D3   | 5    |
-| PWR        | 12      | even row, 6th | D5   | 7    |
-| BUSY       | 18      | even row, 9th | D4   | 6    |
+| RST        | 11      | odd row, 6th  | D5   | 7    |
+| PWR        | 12      | even row, 6th | D4   | 6    |
+| BUSY       | 18      | even row, 9th | D1   | 3    |
 | DIN (MOSI) | 19      | odd row, 10th | D10  | 10   |
-| DC         | 22      | even row 11th | D2   | 4    |
+| DC         | 22      | even row 11th | D6   | 21   |
 | CLK (SCK)  | 23      | odd row, 12th | D8   | 8    |
-| CS         | 24      | even row 12th | D1   | 3    |
+| CS         | 24      | even row 12th | D7   | 20   |
+| Button     | —       | —             | D3   | 5    |
+
+Control lines avoid D0–D3 so those stay available as deep-sleep wake sources.
+D0 is left unused because GPIO2 is a boot strapping pin.
 
 MOSI/SCK land on the XIAO's hardware SPI pins, so GxEPD2's default SPI instance
 needs no reconfiguration.
@@ -70,13 +74,19 @@ GxEPD2 will not work.
 - A pin toggling on a ~20 ms period is 50 Hz mains hum, i.e. floating. Single
   point reads of such a pin are coin flips and prove nothing.
 
+## Refresh timing
+
+Bisected on working hardware: 4 s truncates the refresh and blanks the screen,
+8 s completes it. Committed value is 12 s, deliberately well above the observed
+edge — e-ink slows as it cools and a truncated refresh fails silently, leaving a
+stale image with nothing in the logs.
+
+Awake time is ~14 s per wake, almost entirely that delay.
+
 ## Open
 
-- Deep sleep with timer wake — removed while chasing the PWR fault, needs adding
-  back one variable at a time.
-- Button wake is unresolved. ESP32-C3 only wakes from deep sleep on GPIO0–GPIO5
-  (D0–D3), and CS/DC/RST occupy D1/D2/D3. That leaves D0/GPIO2, a boot strapping
-  pin, which is a poor target for a button to ground. Options: move CS/DC/RST to
-  D6/D7/D9, accept D0 with care, or drop the button for timer-only refresh.
-- Partial refresh is worth using for frequently changing content; full refresh is
-  slow enough to dominate the battery budget.
+- Button wake on D3 is wired but not enabled. Needs
+  `esp_deep_sleep_enable_gpio_wakeup()`.
+- Partial refresh for frequently changing content; full refresh is slow enough
+  to dominate the battery budget.
+- Measure actual deep-sleep current before sizing a battery.
