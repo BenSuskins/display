@@ -31,7 +31,7 @@ unclipping a battery device off a fridge. See
 | Render Service | Trains zone live; weather, calendar, dinner, chores not wired |
 | Device firmware | Working on hardware — fetches a Frame and renders it |
 | Deep sleep, timer wake | Working |
-| Button wake | Enabled on D3, unverified |
+| Button wake | Off by default — use RESET, or fit a button and see below |
 | Offline marker | Written, blocked on the partial-refresh guard below |
 | Battery reporting | **Not implemented** — no divider wired, see below |
 | Partial refresh guard | **Unmeasured.** `partial_probe` env bisects it |
@@ -202,3 +202,23 @@ code that worked once and never again, with no change in between. Solder for
 anything permanent.
 
 See `plans/eink-display.md` for the full debugging record.
+
+## Refreshing it by hand
+
+Press **RESET** on the XIAO. It pulls EN low, so the chip boots straight into a
+fetch and a render — a manual refresh with nothing wired. The reset also clears
+the RTC domain, so the stored frame identity is lost and the device always
+redraws rather than getting a `304`. That is the right behaviour for a button
+you pressed on purpose.
+
+**BOOT cannot be used for this.** It is GPIO9, outside the GPIO0–GPIO5 range the
+ESP32-C3 can wake from deep sleep on, and holding it at reset selects download
+mode instead of running the firmware.
+
+If you later fit a button between **D3 and GND**, uncomment `-D
+WAKE_BUTTON_WIRED` in `platformio.ini`. It is off by default because arming a
+deep-sleep wake on an unconnected pin invites spurious wakes, and a spurious
+wake costs battery for nothing. Note that the pullup has to be held explicitly
+across deep sleep — `pinMode(INPUT_PULLUP)` alone does not survive it, and the
+C3 has no `rtc_gpio_pullup_en`; the mechanism is `gpio_hold_en` plus
+`gpio_deep_sleep_hold_en`.

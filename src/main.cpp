@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <esp_sleep.h>
 #include <esp_system.h>
+#include <driver/gpio.h>
 #include <gdeq/GxEPD2_426_GDEQ0426T82.h>
 
 #include "DisplayPins.h"
@@ -73,6 +74,39 @@ const char *wakeCauseLabel() {
   return esp_reset_reason() == ESP_RST_POWERON ? "power on" : "reset";
 }
 
+// A Requested Wake from a button between D3 and GND.
+//
+// Off until WAKE_BUTTON_WIRED is defined, because arming a deep-sleep wake on an
+// unconnected pin invites spurious wakes — a floating pin on this bench picks up
+// mains hum. RESET remains the manual refresh either way and needs none of this.
+//
+// The pullup has to be held explicitly. pinMode(INPUT_PULLUP) configures the
+// digital pad for normal operation only; without the hold it is not guaranteed
+// through deep sleep, and an unheld pullup is the same as no pullup. The C3 has
+// no rtc_gpio_pullup_en — that API does not exist on this chip.
+void armButtonWake() {
+#ifdef WAKE_BUTTON_WIRED
+  constexpr gpio_num_t button =
+      static_cast<gpio_num_t>(DisplayPins::WakeButton);
+
+  gpio_pullup_en(button);
+  gpio_pulldown_dis(button);
+  gpio_hold_en(button);
+  gpio_deep_sleep_hold_en();
+
+  esp_deep_sleep_enable_gpio_wakeup(1ULL << button, ESP_GPIO_WAKEUP_GPIO_LOW);
+#endif
+}
+
+// Pad holds survive the wake, so they have to be let go before anything is
+// reconfigured — PanelPower in particular is driven low before sleeping.
+void releaseHeldPins() {
+#ifdef WAKE_BUTTON_WIRED
+  gpio_deep_sleep_hold_dis();
+  gpio_hold_dis(static_cast<gpio_num_t>(DisplayPins::WakeButton));
+#endif
+}
+
 void powerPanelUp() {
   pinMode(DisplayPins::PanelPower, OUTPUT);
   digitalWrite(DisplayPins::PanelPower, HIGH);
@@ -127,10 +161,7 @@ void sleepFor(uint32_t seconds) {
   panel.hibernate();
   digitalWrite(DisplayPins::PanelPower, LOW);
 
-  // A Requested Wake: the button pulls D3 low.
-  pinMode(DisplayPins::WakeButton, INPUT_PULLUP);
-  esp_deep_sleep_enable_gpio_wakeup(1ULL << DisplayPins::WakeButton,
-                                    ESP_GPIO_WAKEUP_GPIO_LOW);
+  armButtonWake();
   esp_sleep_enable_timer_wakeup(static_cast<uint64_t>(bounded) * 1000000ULL);
 
   Serial.printf("sleeping %lu s (awake %lu ms)\n", bounded, millis());
@@ -141,6 +172,7 @@ void sleepFor(uint32_t seconds) {
 void setup() {
   Serial.begin(115200);
   delay(200);
+  releaseHeldPins();
 
   wakeCount += 1;
   Serial.printf("\nwake %lu (%s) build %s %s\n", wakeCount, wakeCauseLabel(),
