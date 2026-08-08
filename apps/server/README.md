@@ -2,7 +2,7 @@
 
 Turns household data into a Frame: 800×480, one bit per pixel, 48,000 bytes,
 ready to hand straight to GxEPD2's `writeImage`. The Device does no layout —
-see [ADR-0001](../docs/adr/0001-server-renders-the-frame.md).
+see [ADR-0001](../../docs/adr/0001-server-renders-the-frame.md).
 
 ## Running it
 
@@ -35,7 +35,7 @@ bun run scripts/frameToPng.ts frame.bin frame.png
 `/frame` honours `If-None-Match`. An unchanged Frame gets a `304`, and the
 Device then skips the Panel refresh entirely — 3 s instead of 15 s. That is
 what makes waking 45 times a day cheaper than waking 30 times and always
-redrawing. See [ADR-0002](../docs/adr/0002-server-owns-the-wake-schedule.md).
+redrawing. See [ADR-0002](../../docs/adr/0002-server-owns-the-wake-schedule.md).
 
 ## Tests
 

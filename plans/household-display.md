@@ -4,7 +4,7 @@ A battery e-ink panel on the fridge showing the next trains from Kelvedon,
 weather, today's calendar, tonight's dinner and outstanding chores. A server
 composes the image; the panel only shows it.
 
-Vocabulary is in [`CONTEXT.md`](../CONTEXT.md). The three architectural
+Vocabulary is in [`CONTEXT.md`](../docs/CONTEXT.md). The three architectural
 decisions are in [`docs/adr/`](../docs/adr/).
 
 ## Shape
@@ -46,7 +46,7 @@ Wi-Fi credentials and the device token come from PlatformIO build flags
 (`-D WIFI_SSID=\"${sysenv.WIFI_SSID}\"`), so nothing lands in the repo.
 Updates are by USB (ADR-0003).
 
-`src/DemoPages.cpp` and the eight demo pages stay until the real layout is on
+`apps/firmware/src/demo/` and the eight demo pages stay until the real layout is on
 glass, then go. They answered their question.
 
 ## Render Service

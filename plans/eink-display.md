@@ -32,7 +32,7 @@ needs no reconfiguration.
 Driver HAT rev2.3 has a power-enable pin. Nothing on the panel works until it is
 driven high, and a floating enable reads high or low depending on ambient
 conditions — so the panel appears to work intermittently and every other symptom
-becomes unreproducible. It is driven from D5 in `setup()` before `display.init()`,
+becomes unreproducible. It is driven from D4 in `setup()` before `display.init()`,
 with a 100 ms settle.
 
 Symptoms seen while PWR was floating, all of which resolved once it was driven:
@@ -59,9 +59,13 @@ gated by `RefreshCompletionMilliseconds`. Do not try to re-enable polling.
 
 ## Config switches
 
-Display Config is on **B**. Position A produced no output. Interface Config must
-be the 4-wire SPI position; 3-wire folds the DC bit into the data stream and
-GxEPD2 will not work.
+Display Config is on **A**. Interface Config must be the 4-wire SPI position;
+3-wire folds the DC bit into the data stream and GxEPD2 will not work.
+
+Superseded: this file originally recorded B, on the grounds that A produced no
+output. That was PWR floating, not the switch. Once PWR was driven, the contrast
+probe showed A is the position that drives this panel properly — see
+`docs/TROUBLESHOOTING.md`.
 
 ## Debugging notes
 

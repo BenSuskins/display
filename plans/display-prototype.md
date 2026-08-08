@@ -45,12 +45,15 @@ an unchanged e-ink screen is never evidence that a render happened.
 
 ## Structure
 
-- `include/DemoPage.h` — `DemoPage { name, render }`, ink constants, screen
+All of it now lives in `apps/firmware/src/demo/`, self-contained so the firmware
+build can exclude the directory outright.
+
+- `DemoPage.h` — `DemoPage { name, render }`, ink constants, screen
   geometry. Renderers take `Adafruit_GFX &` so page code knows nothing about
   GxEPD2 or the panel type.
-- `src/DemoPages.cpp` — the eight renderers plus local drawing helpers
+- `DemoPages.cpp` — the eight renderers plus local drawing helpers
   (dither fills, drawn icons, dashed lines, right-aligned text).
-- `src/main.cpp` — panel bring-up and the cycling loop only.
+- `DemoMain.cpp` — panel bring-up and the cycling loop only.
 
 ## Previewing without the panel
 

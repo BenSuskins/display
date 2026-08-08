@@ -20,5 +20,5 @@ fetches those bytes, writes them to the Panel and sleeps.
 - **The Device cannot draw anything.** With the Render Service unreachable it has
   no way to compose a message, which is why the Offline Marker exists as the one
   deliberate exception — a fixed glyph stamped by partial refresh.
-- The existing `src/DemoPages.cpp` renderers and the host preview harness become
+- The existing `apps/firmware/src/demo/DemoPages.cpp` renderers and the host preview harness become
   bring-up scaffolding rather than the foundation of the product.

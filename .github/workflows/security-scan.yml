@@ -1,0 +1,22 @@
+name: Security scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'
+
+# The firmware is not scanned. CodeQL's c-cpp mode needs a real build, and the
+# firmware build requires the four secrets that main.cpp static_asserts on —
+# security-scan.yml has no way to pass them through.
+jobs:
+  codeql:
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    uses: bensuskins/repo-templates/.github/workflows/security-scan.yml@main
+    with:
+      languages: '[{"language":"javascript-typescript","build-mode":"none"}]'

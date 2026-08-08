@@ -4,15 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - "src/**"
-      - "include/**"
-      - "platformio.ini"
+      - "apps/firmware/**"
       - ".github/workflows/firmware.yml"
   pull_request:
     paths:
-      - "src/**"
-      - "include/**"
-      - "platformio.ini"
+      - "apps/firmware/**"
       - ".github/workflows/firmware.yml"
 
 permissions:
@@ -21,6 +17,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/firmware
 
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +34,7 @@ jobs:
           path: |
             ~/.platformio
             ~/.cache/pip
-          key: platformio-${{ hashFiles('platformio.ini') }}
+          key: platformio-${{ hashFiles('apps/firmware/platformio.ini') }}
           restore-keys: platformio-
 
       - name: Install PlatformIO
