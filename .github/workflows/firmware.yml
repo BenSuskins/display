@@ -1,0 +1,68 @@
+name: Firmware CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "include/**"
+      - "platformio.ini"
+      - ".github/workflows/firmware.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "include/**"
+      - "platformio.ini"
+      - ".github/workflows/firmware.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: platformio-${{ hashFiles('platformio.ini') }}
+          restore-keys: platformio-
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      # Placeholders only. main.cpp static_asserts that these are non-empty, so
+      # CI proves the guard compiles as well as the firmware — but nothing here
+      # is a real credential and no artifact is published.
+      - name: Build every environment
+        env:
+          WIFI_SSID: ci-placeholder
+          WIFI_PASSWORD: ci-placeholder
+          FRAME_URL: http://ci.invalid/frame
+          DEVICE_TOKEN: ci-placeholder
+        run: pio run -e display -e partial_probe -e contrast_probe -e demo
+
+      - name: Check the missing-secret guard still fails the build
+        run: |
+          if output=$(pio run -e display 2>&1); then
+            echo "::error::firmware built with no secrets set; the static_assert guard is broken"
+            exit 1
+          fi
+          # Assert why it failed, or a compile error for any other reason would
+          # look like the guard working.
+          if ! grep -q "DEVICE_TOKEN must be set when building" <<< "$output"; then
+            echo "::error::build failed, but not on the missing-secret guard"
+            tail -40 <<< "$output"
+            exit 1
+          fi
+          echo "guard holds: building without secrets fails as intended"
