@@ -54,27 +54,43 @@ void powerPanelUp() {
   pinMode(DisplayPins::PanelPower, OUTPUT);
   digitalWrite(DisplayPins::PanelPower, HIGH);
   delay(100);
-  panel.init(115200, true, 2, false);
+
+  // `initial` must be false. With it true, GxEPD2 sets _initial_write, and the
+  // first writeImage silently calls clearScreen() — a whole extra full refresh
+  // to white, which the library waits only full_refresh_time (1600 ms) for
+  // because BUSY tells it nothing here. This panel needs ~8 s. Our image
+  // refresh then lands 1.6 s into that clear and both are lost.
+  //
+  // Deep sleep restarts the sketch, so this object is fresh on every wake and
+  // the fault would repeat on every redraw, not just the first.
+  //
+  // Skipping the clear is safe: we overwrite all 800x480 pixels anyway, and a
+  // full refresh drives every pixel regardless of what was there.
+  panel.init(115200, false, 10, false);
 }
 
 void showFrame() {
-  panel.writeImage(frameBuffer, 0, 0, Frame::Width, Frame::Height);
+  // Writes the frame to both the previous and current controller buffers, so
+  // one refresh leaves them equal — which is what a later partial refresh, and
+  // therefore the Offline Marker, differentiates against.
+  panel.writeImageForFullRefresh(frameBuffer, 0, 0, Frame::Width,
+                                 Frame::Height);
   panel.refresh(false);
   delay(FullRefreshGuardMilliseconds);
-  // Leaves the controller's previous buffer equal to its current one, which is
-  // what a later partial refresh differentiates against.
-  panel.writeImageAgain(frameBuffer, 0, 0, Frame::Width, Frame::Height);
 }
 
 void stampOfflineMarker() {
+  // Tell the controller what was there before, because after a cold power-up it
+  // has no idea and a partial refresh is differential. See OfflineMarker.h.
+  panel.writeImageToPrevious(OfflineMarker::WhiteTile, OfflineMarker::X,
+                             OfflineMarker::Y, OfflineMarker::Width,
+                             OfflineMarker::Height);
   panel.writeImage(OfflineMarker::Bitmap, OfflineMarker::X, OfflineMarker::Y,
                    OfflineMarker::Width, OfflineMarker::Height);
   panel.refresh(OfflineMarker::X, OfflineMarker::Y, OfflineMarker::Width,
                 OfflineMarker::Height);
   delay(PartialRefreshGuardMilliseconds);
-  panel.writeImageAgain(OfflineMarker::Bitmap, OfflineMarker::X,
-                        OfflineMarker::Y, OfflineMarker::Width,
-                        OfflineMarker::Height);
+
   offlineMarkerShown = true;
   Serial.println("panel: offline marker stamped");
 }

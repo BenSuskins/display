@@ -31,6 +31,20 @@ constexpr uint8_t Bitmap[] = {
     0xFF, 0xFF,  // margin
 };
 
+// A partial refresh is differential: it drives pixels from what the controller
+// believes was there to what is there now. The marker is stamped on wakes where
+// no frame was written, so the controller has just been powered up and its
+// previous buffer is undefined. Declaring the previous state explicitly fixes
+// that, and white is the truth — the marker sits on the footer's background,
+// between the rendered time and the battery reading.
+constexpr uint8_t WhiteTile[] = {
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+};
+
 static_assert(sizeof(Bitmap) == (Width / 8) * Height,
               "marker bitmap must match its declared size");
+static_assert(sizeof(WhiteTile) == sizeof(Bitmap),
+              "the declared previous state must cover the same region");
 }  // namespace OfflineMarker
