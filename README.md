@@ -121,11 +121,8 @@ changing content, reserving full refresh for periodic ghost clearing.
 
 ## Build
 
-```sh
-pio run -t upload                      # layout prototype, the default env
-pio run -e contrast_probe -t upload    # solid fields for judging contrast
-pio device monitor
-```
+Environments are listed above. `pio run -t upload` builds the default, which is
+the firmware and needs the four environment variables.
 
 `pio device monitor` needs a real TTY. Run it in a terminal, not through a
 non-interactive shell, or it fails with
