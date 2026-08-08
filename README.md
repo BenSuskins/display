@@ -1,7 +1,24 @@
 # display
 
-E-ink status display: a Waveshare 4.26" 800×480 black/white panel driven by a
-Seeed XIAO ESP32-C3 through a Waveshare e-Paper Driver HAT rev2.3.
+A fridge-mounted e-ink display showing the next trains from Kelvedon, weather,
+today's calendar, tonight's dinner and outstanding chores. A Waveshare 4.26"
+800×480 black/white panel driven by a Seeed XIAO ESP32-C3 through a Waveshare
+e-Paper Driver HAT rev2.3.
+
+Two components:
+
+- **Firmware** — this directory. Wakes, fetches a pre-rendered Frame, writes it
+  to the panel, sleeps for as long as it is told to. Owns no layout and no data.
+- **[Render Service](server/)** — a TypeScript container that aggregates the
+  data, lays the page out in HTML/CSS and rasterises it to 48,000 bytes of
+  packed 1-bit pixels.
+
+The split is deliberate and is the reason firmware barely changes: every design
+decision lives on the server, where changing it is a deploy rather than
+unclipping a battery device off a fridge. See
+[ADR-0001](docs/adr/0001-server-renders-the-frame.md), the vocabulary in
+[CONTEXT.md](CONTEXT.md), and the plan in
+[plans/household-display.md](plans/household-display.md).
 
 ## Status
 
@@ -10,17 +27,49 @@ Seeed XIAO ESP32-C3 through a Waveshare e-Paper Driver HAT rev2.3.
 | Toolchain, build, flash | Working |
 | Panel power (PWR on D4) | Working — required, see below |
 | Rendering over SPI | Working |
-| Deep sleep, timer wake | Working at `a505344`, not in the current build |
 | BUSY feedback | Abandoned — unusable on this hardware |
-| Button wake | Wired to D3, not yet enabled |
-| Layout prototype | Default build — 8 demo pages on a 15 s cycle |
-| Contrast probe | `contrast_probe` env — solid fields for hardware bring-up |
+| Render Service | Trains zone live; weather, calendar, dinner, chores not wired |
+| Device firmware | Builds, **not yet run on hardware** |
+| Deep sleep, timer wake | In the firmware, unverified since the rewrite |
+| Button wake | Enabled on D3, unverified |
+| Offline marker | Written, blocked on the partial-refresh guard below |
+| Battery reporting | **Not implemented** — no divider wired, see below |
+| Partial refresh guard | **Unmeasured.** `partial_probe` env bisects it |
+| Deep sleep current | **Unmeasured.** The battery estimate rests on it |
 
-The default build is the layout prototype: it stays awake and cycles through
-eight pages exploring type, tone, symbols, density and charts, to work out what
-reads well on this panel. See `plans/display-prototype.md`. The timer-driven
-sleep loop is preserved in commit `a505344` and comes back once a layout is
-chosen.
+Two bench measurements gate everything: real deep-sleep current, and the partial
+refresh guard delay. Both are called out where they matter.
+
+## Environments
+
+```sh
+pio run -e display -t upload         # the firmware (needs the env vars below)
+pio run -e partial_probe -t upload   # bisect the partial refresh guard
+pio run -e contrast_probe -t upload  # solid fields for judging contrast
+pio run -e demo -t upload            # the old 8-page layout prototype
+```
+
+`display` takes its secrets from the environment so none of them land in the
+repo. An unset variable fails the build rather than flashing a device that
+cannot connect:
+
+```sh
+export WIFI_SSID=... WIFI_PASSWORD=... DEVICE_TOKEN=...
+export FRAME_URL=http://homelab.local:8080/frame
+pio run -e display -t upload
+```
+
+## Battery reporting is not wired
+
+The Render Service already accepts `?battery=` and stretches the sleep interval
+when the voltage is low, and tolerates its absence — but the XIAO ESP32-C3 has
+no onboard divider from the battery pads to an ADC pin, so the firmware does not
+send it. Wiring it means a resistor divider from BAT+ to an ADC input. **D1
+(GPIO3) is the pin to use**: it is ADC1_CH3, and it is free because BUSY turned
+out to be useless on this HAT.
+
+Until that exists, a flat battery simply stops the display rather than
+stretching its own schedule to survive longer.
 
 ## Hardware
 
