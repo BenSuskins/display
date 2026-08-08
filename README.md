@@ -29,8 +29,8 @@ unclipping a battery device off a fridge. See
 | Rendering over SPI | Working |
 | BUSY feedback | Abandoned — unusable on this hardware |
 | Render Service | Trains zone live; weather, calendar, dinner, chores not wired |
-| Device firmware | Builds, **not yet run on hardware** |
-| Deep sleep, timer wake | In the firmware, unverified since the rewrite |
+| Device firmware | Working on hardware — fetches a Frame and renders it |
+| Deep sleep, timer wake | Working |
 | Button wake | Enabled on D3, unverified |
 | Offline marker | Written, blocked on the partial-refresh guard below |
 | Battery reporting | **Not implemented** — no divider wired, see below |
@@ -168,6 +168,20 @@ invisible on the demo pages. Render solid fields instead:
 `pio run -e contrast_probe -t upload` cycles a solid black page and the same
 page with a white box swept across three positions, which is what made the band
 and its dependence on content obvious.
+
+**GxEPD2 will issue a refresh you did not ask for.** `init(bitrate, initial,
+…)` with `initial = true` sets `_initial_write`, and the next `writeImage`
+silently calls `clearScreen()` first — a full refresh to white. The library
+waits `full_refresh_time` for it, which is 1600 ms, and this panel needs about
+8 s. Your own refresh then lands mid-clear and both are lost, leaving a blank
+screen and no clue in the logs. Pass `initial = false` when you are about to
+overwrite every pixel. The same flag matters for partial refresh:
+`refresh(x, y, w, h)` starts with `if (_initial_refresh) return refresh(false)`,
+so a 16×16 update becomes a full-screen one.
+
+The general trap: **any library call can hide a refresh, and every refresh on
+this hardware needs a guard the library does not know about.** Its 1600 ms is
+built for a panel whose BUSY line works.
 
 **BUSY carries no information here.** It reads a constant low whenever the panel
 is powered. GxEPD2 expects active-high, sees low, and returns in microseconds —
