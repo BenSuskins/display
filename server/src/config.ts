@@ -94,7 +94,7 @@ export const readConfig = (env: Environment): Result<Config, ConfigFailure> => {
   const minimumLeadMinutes = positiveNumber(
     env,
     "DEPARTURE_MIN_LEAD_MINUTES",
-    15,
+    5,
   );
   if (!minimumLeadMinutes.ok) return minimumLeadMinutes;
 

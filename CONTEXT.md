@@ -52,8 +52,10 @@ _Avoid_: cache age, lag
 ### The commute
 
 **Catchable Departure**:
-A departure leaving far enough ahead that you could still make it if you left
-the house now — currently 15 minutes, being 10 to walk to Kelvedon plus slack.
+A departure leaving far enough ahead to be worth showing — currently 5 minutes.
+Deliberately shorter than the ten minute walk to Kelvedon: a train you would
+have to run for is still information, and only the reader knows whether they
+would run.
 _Avoid_: next train, upcoming departure
 
 **Departure State**:

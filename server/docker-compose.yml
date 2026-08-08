@@ -13,7 +13,7 @@ services:
       - HUXLEY_BASE_URL=${HUXLEY_BASE_URL:-https://huxley2.azurewebsites.net}
       - STATION_ORIGIN=${STATION_ORIGIN:-KEL}
       - STATION_DESTINATION=${STATION_DESTINATION:-LST}
-      - DEPARTURE_MIN_LEAD_MINUTES=${DEPARTURE_MIN_LEAD_MINUTES:-15}
+      - DEPARTURE_MIN_LEAD_MINUTES=${DEPARTURE_MIN_LEAD_MINUTES:-5}
       # Optional. Absent means that zone reports itself unconfigured rather
       # than the service refusing to start and taking the rest down with it.
       - MET_ACCESS_TOKEN=${MET_ACCESS_TOKEN:-}

@@ -18,11 +18,11 @@ export type FakeDepartureSourceState = {
 export const fakeDepartureSource = (
   state: FakeDepartureSourceState = {},
 ): DepartureSource => ({
-  board: async () =>
+  board: async (now) =>
     state.failure !== undefined
       ? fail(state.failure)
       : succeed({
-          generatedAt: state.board?.generatedAt ?? new Date(),
+          generatedAt: state.board?.generatedAt ?? now,
           origin: state.board?.origin ?? "Kelvedon",
           departures: state.board?.departures ?? [],
         }),

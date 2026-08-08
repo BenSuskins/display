@@ -25,8 +25,8 @@ describe("readConfig", () => {
     expect(config.departures.accessToken).toBe("a-token");
   });
 
-  test("defaults the lead time to the walk to Kelvedon plus slack", () => {
-    expect(configOrThrow(complete).departures.minimumLeadMinutes).toBe(15);
+  test("defaults the lead time short enough to include a train worth running for", () => {
+    expect(configOrThrow(complete).departures.minimumLeadMinutes).toBe(5);
   });
 
   test("lets the lead time be overridden", () => {

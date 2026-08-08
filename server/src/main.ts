@@ -49,6 +49,7 @@ const handler = await handleRequest({
       originCrs: departures.originCrs,
       destinationCrs: departures.destinationCrs,
       rows: departures.rows,
+      timeZone: wake.timeZone,
     }),
     weatherSource,
     householdSource,

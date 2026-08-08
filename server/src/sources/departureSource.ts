@@ -16,5 +16,5 @@ export type DepartureBoard = {
 };
 
 export type DepartureSource = {
-  readonly board: () => Promise<Result<DepartureBoard, SourceFailure>>;
+  readonly board: (now: Date) => Promise<Result<DepartureBoard, SourceFailure>>;
 };

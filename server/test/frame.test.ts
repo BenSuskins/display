@@ -133,7 +133,8 @@ describe("frame identity", () => {
     );
     const oneCatchable = await etagOf(
       composer,
-      new Date("2026-08-10T06:05:00Z"),
+      // Three minutes before the 07:16, so it is gone under the five minute rule.
+      new Date("2026-08-10T06:13:00Z"),
     );
 
     expect(oneCatchable).not.toBe(bothCatchable);

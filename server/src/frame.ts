@@ -51,7 +51,7 @@ export const frameComposer = ({
     // Fetched together and kept as Results, so one dead upstream costs its own
     // zone and nothing else.
     const [board, weather, household] = await Promise.all([
-      departureSource.board(),
+      departureSource.board(now),
       weatherSource.weather(now),
       householdSource.household(now),
     ]);
