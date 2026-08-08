@@ -13,9 +13,10 @@ Seeed XIAO ESP32-C3 through a Waveshare e-Paper Driver HAT rev2.3.
 | Deep sleep, timer wake | Working at `a505344`, not in the current build |
 | BUSY feedback | Abandoned — unusable on this hardware |
 | Button wake | Wired to D3, not yet enabled |
-| Layout prototype | Current build — 8 demo pages on a 15 s cycle |
+| Layout prototype | Default build — 8 demo pages on a 15 s cycle |
+| Contrast probe | `contrast_probe` env — solid fields for hardware bring-up |
 
-The build on `main` is the layout prototype: it stays awake and cycles through
+The default build is the layout prototype: it stays awake and cycles through
 eight pages exploring type, tone, symbols, density and charts, to work out what
 reads well on this panel. See `plans/display-prototype.md`. The timer-driven
 sleep loop is preserved in commit `a505344` and comes back once a layout is
@@ -27,9 +28,12 @@ chosen.
 - Waveshare e-Paper Driver HAT rev2.3 (Raspberry Pi 40-pin header layout)
 - Waveshare 4.26" 800×480 b/w panel (GxEPD2 class `GxEPD2_426_GDEQ0426T82`)
 
-Display Config switch on **B**. Interface Config must be the 4-wire SPI
-position — 3-wire folds the DC bit into the data stream and GxEPD2 will not
-work.
+Display Config switch on **A**, Interface Config on **0**. Those are the
+positions this panel works in, established on the bench. Do not trust the
+silkscreen: it prints both options at either end of each switch and gives no
+clue whether the slider selects the label it points at or the one it has moved
+away from. The labels appear to say A is the 3 Ω resistor and 0 is 3-wire SPI,
+and both readings are contradicted by how the hardware actually behaves.
 
 ## Wiring
 
@@ -69,7 +73,8 @@ changing content, reserving full refresh for periodic ghost clearing.
 ## Build
 
 ```sh
-pio run -t upload
+pio run -t upload                      # layout prototype, the default env
+pio run -e contrast_probe -t upload    # solid fields for judging contrast
 pio device monitor
 ```
 
@@ -90,6 +95,30 @@ put a build timestamp or counter on screen — `__DATE__ " " __TIME__` works.
 reads high or low depending on ambient conditions, so the panel works
 intermittently and every other symptom becomes unreproducible. Most of the
 bring-up was spent chasing symptoms of this.
+
+**Display Config must be A, not B.** That switch picks the current-limiting
+resistor for the panel's boost converter, and a panel this size needs the lower
+one. On B the booster is starved, the drive waveform is weak, and the whole
+panel renders pale. Verify by position, not by the printed resistance: the
+silkscreen reads as though A were the 3 Ω option, but A is empirically the one
+that drives this panel properly. The switch is also small enough to get nudged
+while handling the board, so check it before suspecting anything else.
+
+**Two switch positions are proved by behaviour, not labels.** If the panel
+renders recognisable content at all, Interface Config is in 4-wire mode, because
+3-wire folds the DC bit into the data stream and GxEPD2 produces nothing. If
+solid fills are properly black, Display Config is on the low resistor. Both
+inferences are more reliable than reading the HAT.
+
+**Weak drive kills fine detail first, solid fills last.** Hairlines, small text
+and dither go faint while large black areas still look fine, so a mostly-white
+layout hides the fault almost completely. A weak panel also shows a full-height
+pale band on whichever columns contain switching content — those source drivers
+draw the most current — which moves if you move the content. Both signatures are
+invisible on the demo pages. Render solid fields instead:
+`pio run -e contrast_probe -t upload` cycles a solid black page and the same
+page with a white box swept across three positions, which is what made the band
+and its dependence on content obvious.
 
 **BUSY carries no information here.** It reads a constant low whenever the panel
 is powered. GxEPD2 expects active-high, sees low, and returns in microseconds —
