@@ -133,34 +133,46 @@ const dinnerLine = (view: FrameView): string => {
     : `<p class="dinner">${escapeHtml(dinner)}</p>`;
 };
 
+/** Surnames are noise on a household display, and they are what pushed the
+ * chore pills wide enough to evict the overdue count. */
+const firstNameOf = (fullName: string): string => fullName.split(" ")[0] ?? fullName;
+
+/**
+ * The overdue count sits in the heading, not among the chore pills.
+ *
+ * The band has a fixed height, so anything sharing a wrapping row with the
+ * chores can be pushed onto a second line and clipped — which is exactly what
+ * a real chore called "Clean Top of Cupboards" assigned to someone with a
+ * surname did. In the heading its position cannot be affected by the content.
+ */
+const choreHeading = (view: FrameView): string => {
+  const overdue =
+    view.household.ok && view.household.value.overdueChoreCount > 0
+      ? `<span class="overdue">! ${view.household.value.overdueChoreCount} overdue</span>`
+      : "";
+
+  return `<h2 class="withCount"><span>Chores</span>${overdue}</h2>`;
+};
+
 const choreLines = (view: FrameView): string => {
   if (!view.household.ok) return missing("Chores", view.household.failure);
 
-  const { choresDueToday, overdueChoreCount } = view.household.value;
-  const overdue =
-    overdueChoreCount === 0
-      ? ""
-      : `<span class="overdue">! ${overdueChoreCount} overdue</span>`;
-
+  const { choresDueToday } = view.household.value;
   if (choresDueToday.length === 0) {
-    return `<div class="chores"><span class="unavailable">None due today</span>${overdue}</div>`;
+    return `<p class="unavailable">None due today</p>`;
   }
 
-  const due = choresDueToday
+  return `<div class="chores">${choresDueToday
     .slice(0, 3)
     .map(
       (chore) =>
         `<span class="chore">${escapeHtml(chore.name)}${
           chore.assignedTo === undefined
             ? ""
-            : ` &ndash; ${escapeHtml(chore.assignedTo)}`
+            : ` &ndash; ${escapeHtml(firstNameOf(chore.assignedTo))}`
         }</span>`,
     )
-    .join("");
-
-  // The overdue count shares the wrapping row rather than sitting under it:
-  // the band has a fixed height and a second line overflows it.
-  return `<div class="chores">${due}${overdue}</div>`;
+    .join("")}</div>`;
 };
 
 const startOfLocalDay = (moment: Date, timeZone: string): Date => {
@@ -175,8 +187,8 @@ const startOfLocalDay = (moment: Date, timeZone: string): Date => {
 };
 
 /**
- * The same page with the one thing that ticks on its own held still: the footer
- * clock. Hashing this rather than the real page is what makes a 304 possible —
+ * The same page with the one thing that ticks on its own held still: the
+ * rendered clock in the header. Hashing this rather than the real page is what makes a 304 possible —
  * otherwise the Frame's identity changes every minute and the Device redraws on
  * every Wake, which is the entire battery argument in ADR-0002.
  *
@@ -207,7 +219,7 @@ export const renderFrameHtml = (view: FrameView): string => `
     background: #fff; color: #000;
     font-family: Helvetica, Arial, sans-serif;
     display: grid;
-    grid-template-rows: 64px 1fr 104px 32px;
+    grid-template-rows: 64px 1fr 136px;
     -webkit-font-smoothing: none;
   }
   header {
@@ -215,7 +227,8 @@ export const renderFrameHtml = (view: FrameView): string => `
     padding: 0 20px; border-bottom: 3px solid #000;
     font-size: 26px; font-weight: bold; letter-spacing: 1px;
   }
-  header .muted { font-weight: normal; font-size: 20px; }
+  header .muted { font-weight: normal; font-size: 18px; }
+  header .rendered { font-weight: normal; font-size: 15px; }
   main { display: grid; grid-template-columns: 340px 1fr; min-height: 0; }
   section { padding: 14px 20px; min-height: 0; overflow: hidden; }
   section + section { border-left: 3px solid #000; }
@@ -223,6 +236,10 @@ export const renderFrameHtml = (view: FrameView): string => `
     margin: 0 0 10px; font-size: 17px; letter-spacing: 2px;
     text-transform: uppercase; border-bottom: 1px solid #000;
     padding-bottom: 5px;
+  }
+  h2.withCount {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px;
   }
   .train {
     display: flex; justify-content: space-between; align-items: baseline;
@@ -249,21 +266,26 @@ export const renderFrameHtml = (view: FrameView): string => `
   }
   .dinner { margin: 0; font-size: 26px; font-weight: bold; }
   .chores { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .chore { font-size: 19px; border: 2px solid #000; padding: 2px 8px; }
+  .chore {
+    font-size: 19px; border: 2px solid #000; padding: 2px 8px;
+    max-width: 100%; overflow: hidden; white-space: nowrap;
+    text-overflow: ellipsis;
+  }
   .overdue {
-    margin: 0; font-size: 18px; font-weight: bold;
-    background: #000; color: #fff; padding: 4px 10px;
+    font-size: 15px; font-weight: bold; letter-spacing: 0;
+    background: #000; color: #fff; padding: 3px 9px;
+    white-space: nowrap; flex: none;
   }
   .unavailable { margin: 0; font-size: 17px; font-style: italic; }
   .bands { display: grid; grid-template-columns: 340px 1fr; border-top: 3px solid #000; }
-  footer {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0 20px; border-top: 1px solid #000; font-size: 15px;
-  }
+  /* The firmware stamps the Offline Marker blind into the bottom right corner
+     (x 776, y 456, 16x16). Nothing may render there or it will be overdrawn. */
+  .bands section:last-child { padding-right: 44px; }
 </style>
 
 <header>
-  <span>${escapeHtml(dateIn(view.renderedAt, view.timeZone))}</span>
+  <span>${escapeHtml(dateIn(view.renderedAt, view.timeZone))}
+    <span class="rendered">&middot; ${timeIn(view.renderedAt, view.timeZone)}</span></span>
   ${weatherSummary(view)}
 </header>
 
@@ -281,10 +303,6 @@ export const renderFrameHtml = (view: FrameView): string => `
 
 <div class="bands">
   <section><h2>Dinner</h2>${dinnerLine(view)}</section>
-  <section><h2>Chores</h2>${choreLines(view)}</section>
+  <section>${choreHeading(view)}${choreLines(view)}</section>
 </div>
-
-<footer>
-  <span>rendered ${timeIn(view.renderedAt, view.timeZone)}</span>
-</footer>
 `;

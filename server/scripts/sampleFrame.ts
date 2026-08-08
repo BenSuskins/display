@@ -47,15 +47,17 @@ const composer = frameComposer({
   }),
   householdSource: fakeHouseholdSource({
     household: {
+      // Taken from a real feed: a long chore name plus a full name is what
+      // pushed the overdue count out of the band.
       choresDueToday: [
-        { name: "Bins", assignedTo: "Ben" },
-        { name: "Hoover", assignedTo: "Sam" },
+        { name: "Clean Top of Cupboards", assignedTo: "Ben Suskins" },
+        { name: "Hoover downstairs", assignedTo: "Sam Suskins" },
       ],
-      overdueChoreCount: 2,
+      overdueChoreCount: 10,
       dinner: "Chicken traybake",
       today: [
         { title: "Bank holiday", startsAt: at("00:00"), allDay: true },
-        { title: "Standup", startsAt: at("08:00"), allDay: false },
+        { title: "Tottenham Hotspur - Getafe", startsAt: at("14:00"), allDay: false },
         { title: "Dentist", startsAt: at("12:00"), allDay: false },
         {
           title: "Ellie swimming lesson at Riverside",

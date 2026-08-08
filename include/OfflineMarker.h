@@ -9,15 +9,19 @@
 // message saying so. Without this, a Frame hours out of date looks exactly like
 // a fresh one, which is the failure mode this hardware is already prone to.
 //
-// A 16x16 black tile with a white exclamation mark, stamped into the footer by
-// partial refresh so the rest of the Frame is left untouched. Bits follow the
-// panel convention: a set bit is white.
+// A 16x16 black tile with a white exclamation mark, stamped by partial refresh
+// so the rest of the Frame is left untouched. Bits follow the panel convention:
+// a set bit is white.
+//
+// The firmware writes this blind at a fixed position, so the layout has to keep
+// that corner clear — see the padding on the last band section in layout.ts.
+// Move one and you must move the other.
 namespace OfflineMarker {
 constexpr int16_t Width = 16;
 constexpr int16_t Height = 16;
 
 // x and width must be multiples of 8 — the controller addresses RAM by byte.
-constexpr int16_t X = 384;
+constexpr int16_t X = 776;
 constexpr int16_t Y = 456;
 
 constexpr uint8_t Bitmap[] = {

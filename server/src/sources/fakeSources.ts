@@ -1,4 +1,4 @@
-import type { Household } from "../domain/household";
+import { inDayOrder, type Household } from "../domain/household";
 import { fail, succeed } from "../domain/result";
 import type { Weather } from "../domain/weather";
 import type { SourceFailure } from "./departureSource";
@@ -31,8 +31,13 @@ export const QuietHousehold: Household = {
 export const fakeHouseholdSource = (
   state: { household?: Partial<Household>; failure?: SourceFailure } = {},
 ): HouseholdSource => ({
-  household: async () =>
-    state.failure !== undefined
-      ? fail(state.failure)
-      : succeed({ ...QuietHousehold, ...state.household }),
+  household: async () => {
+    if (state.failure !== undefined) return fail(state.failure);
+
+    const household = { ...QuietHousehold, ...state.household };
+    // The real source orders the day before returning it. A fake that skips
+    // that is not standing in for it — it is quietly describing a different
+    // contract, and the difference only shows up on the panel.
+    return succeed({ ...household, today: inDayOrder(household.today) });
+  },
 });
