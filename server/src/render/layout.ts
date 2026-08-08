@@ -75,6 +75,40 @@ const departureRows = (view: FrameView): string => {
     .join("");
 };
 
+const startOfLocalDay = (moment: Date, timeZone: string): Date => {
+  const isoDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(moment);
+
+  return new Date(`${isoDate}T00:00:00Z`);
+};
+
+/**
+ * The same page with everything that ticks on its own held still: the footer
+ * clock and the battery reading. Hashing this rather than the real page is what
+ * makes a 304 possible — otherwise the Frame's identity changes every minute
+ * and the Device redraws on every Wake, which is the entire battery argument in
+ * ADR-0002.
+ *
+ * The date survives, so a Frame still changes when the day rolls over.
+ *
+ * This is derived from the page itself rather than from a hand-listed set of
+ * fields, so a zone added later is covered automatically. The one rule that
+ * keeps that true: a zone must render from data passed into the view, never
+ * from `view.renderedAt` directly, or its changes will be invisible here.
+ */
+export const renderFrameIdentityHtml = (view: FrameView): string => {
+  const { batteryVolts: _ignored, ...withoutBattery } = view;
+
+  return renderFrameHtml({
+    ...withoutBattery,
+    renderedAt: startOfLocalDay(view.renderedAt, view.timeZone),
+  });
+};
+
 /**
  * The Frame's page. Pure black and white by design: the rasteriser thresholds
  * at mid grey, so avoiding greys entirely makes the browser preview and the

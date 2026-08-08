@@ -1,7 +1,11 @@
 import type { DepartureConfig } from "./config";
 import { selectCatchableDepartures } from "./domain/departure";
 import { fail, succeed, type Result } from "./domain/result";
-import { renderFrameHtml } from "./render/layout";
+import {
+  renderFrameHtml,
+  renderFrameIdentityHtml,
+  type FrameView,
+} from "./render/layout";
 import type { FrameBytes } from "./render/packMonochrome";
 import type { RasterFailure, Rasteriser } from "./render/rasteriser";
 import type { DepartureSource } from "./sources/departureSource";
@@ -38,13 +42,13 @@ export const frameComposer = ({
   rasteriser,
   timeZone,
 }: FrameComposerParts): FrameComposer => {
-  const buildHtml = async ({
+  const buildView = async ({
     now,
     batteryVolts,
-  }: FrameRequest): Promise<string> => {
+  }: FrameRequest): Promise<FrameView> => {
     const board = await departureSource.board();
 
-    return renderFrameHtml({
+    return {
       renderedAt: now,
       timeZone,
       destination: departureConfig.destinationCrs,
@@ -59,19 +63,23 @@ export const frameComposer = ({
           )
         : board,
       ...(batteryVolts === undefined ? {} : { batteryVolts }),
-    });
+    };
   };
 
   return {
-    previewHtml: buildHtml,
+    previewHtml: async (request) => renderFrameHtml(await buildView(request)),
 
     compose: async (request) => {
-      const rastered = await rasteriser.rasterise(await buildHtml(request));
+      const view = await buildView(request);
+
+      const rastered = await rasteriser.rasterise(renderFrameHtml(view));
       if (!rastered.ok) return fail(rastered.failure);
 
+      // Deliberately not a hash of the Frame's bytes. Those include a footer
+      // clock that ticks every minute, which would make every Wake a redraw.
       return succeed({
         bytes: rastered.value,
-        etag: `"${Bun.hash(rastered.value).toString(16)}"`,
+        etag: `"${Bun.hash(renderFrameIdentityHtml(view)).toString(16)}"`,
       });
     },
   };
