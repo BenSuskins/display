@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <esp_sleep.h>
+#include <esp_system.h>
 #include <gdeq/GxEPD2_426_GDEQ0426T82.h>
 
 #include "DisplayPins.h"
@@ -49,6 +50,28 @@ static uint8_t frameBuffer[Frame::ByteLength];
 
 GxEPD2_426_GDEQ0426T82 panel(DisplayPins::ChipSelect, DisplayPins::DataCommand,
                              DisplayPins::Reset, DisplayPins::Busy);
+
+// The XIAO's RESET button is a usable Requested Wake without wiring anything:
+// it pulls EN low, so the chip boots straight into a fetch and a render. It
+// resets the RTC domain too, which clears the stored etag — so a reset press
+// always redraws rather than getting a 304. That is the right behaviour for
+// someone who just pressed refresh.
+//
+// The BOOT button cannot be used. It is GPIO9, outside the GPIO0-5 range the
+// ESP32-C3 can wake from deep sleep on, and holding it at reset selects
+// download mode instead of running this firmware.
+const char *wakeCauseLabel() {
+  switch (esp_sleep_get_wakeup_cause()) {
+    case ESP_SLEEP_WAKEUP_GPIO:
+      return "button";
+    case ESP_SLEEP_WAKEUP_TIMER:
+      return "timer";
+    default:
+      break;
+  }
+
+  return esp_reset_reason() == ESP_RST_POWERON ? "power on" : "reset";
+}
 
 void powerPanelUp() {
   pinMode(DisplayPins::PanelPower, OUTPUT);
@@ -120,10 +143,8 @@ void setup() {
   delay(200);
 
   wakeCount += 1;
-  const bool buttonWake =
-      esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO;
-  Serial.printf("\nwake %lu (%s) build %s %s\n", wakeCount,
-                buttonWake ? "button" : "timer", __DATE__, __TIME__);
+  Serial.printf("\nwake %lu (%s) build %s %s\n", wakeCount, wakeCauseLabel(),
+                __DATE__, __TIME__);
 
   if (!FrameClient::joinNetwork(WIFI_SSID, WIFI_PASSWORD)) {
     consecutiveFailures += 1;

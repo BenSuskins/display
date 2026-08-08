@@ -8,7 +8,6 @@ export type FrameView = {
   readonly timeZone: string;
   readonly destination: string;
   readonly departures: Result<readonly Departure[], SourceFailure>;
-  readonly batteryVolts?: number;
 };
 
 const escapeHtml = (value: string): string =>
@@ -87,11 +86,10 @@ const startOfLocalDay = (moment: Date, timeZone: string): Date => {
 };
 
 /**
- * The same page with everything that ticks on its own held still: the footer
- * clock and the battery reading. Hashing this rather than the real page is what
- * makes a 304 possible — otherwise the Frame's identity changes every minute
- * and the Device redraws on every Wake, which is the entire battery argument in
- * ADR-0002.
+ * The same page with the one thing that ticks on its own held still: the footer
+ * clock. Hashing this rather than the real page is what makes a 304 possible —
+ * otherwise the Frame's identity changes every minute and the Device redraws on
+ * every Wake, which is the entire battery argument in ADR-0002.
  *
  * The date survives, so a Frame still changes when the day rolls over.
  *
@@ -100,14 +98,11 @@ const startOfLocalDay = (moment: Date, timeZone: string): Date => {
  * keeps that true: a zone must render from data passed into the view, never
  * from `view.renderedAt` directly, or its changes will be invisible here.
  */
-export const renderFrameIdentityHtml = (view: FrameView): string => {
-  const { batteryVolts: _ignored, ...withoutBattery } = view;
-
-  return renderFrameHtml({
-    ...withoutBattery,
+export const renderFrameIdentityHtml = (view: FrameView): string =>
+  renderFrameHtml({
+    ...view,
     renderedAt: startOfLocalDay(view.renderedAt, view.timeZone),
   });
-};
 
 /**
  * The Frame's page. Pure black and white by design: the rasteriser thresholds
@@ -179,10 +174,5 @@ export const renderFrameHtml = (view: FrameView): string => `
 
 <footer>
   <span>rendered ${timeIn(view.renderedAt, view.timeZone)}</span>
-  <span>${
-    view.batteryVolts === undefined
-      ? "battery unknown"
-      : `battery ${view.batteryVolts.toFixed(2)}V`
-  }</span>
 </footer>
 `;

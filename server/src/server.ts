@@ -45,8 +45,11 @@ export const handleRequest = async ({
     }
 
     const moment = now();
+    // Reported by the Device, used only to stretch its sleep when the battery
+    // is low. It is deliberately not on the Frame: a reading that drifts every
+    // wake would change the Frame's identity and cost a redraw every time.
     const batteryVolts = readBatteryVolts(url);
-    const frameRequest = batteryVolts === undefined ? { now: moment } : { now: moment, batteryVolts };
+    const frameRequest = { now: moment };
 
     // The same page the Frame is made from, for iterating on layout in a
     // browser instead of a 15 s round trip to the Panel.

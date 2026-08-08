@@ -19,7 +19,6 @@ export type Frame = {
 
 export type FrameRequest = {
   readonly now: Date;
-  readonly batteryVolts?: number;
 };
 
 export type FrameComposer = {
@@ -42,10 +41,7 @@ export const frameComposer = ({
   rasteriser,
   timeZone,
 }: FrameComposerParts): FrameComposer => {
-  const buildView = async ({
-    now,
-    batteryVolts,
-  }: FrameRequest): Promise<FrameView> => {
+  const buildView = async ({ now }: FrameRequest): Promise<FrameView> => {
     const board = await departureSource.board();
 
     return {
@@ -62,7 +58,6 @@ export const frameComposer = ({
             }),
           )
         : board,
-      ...(batteryVolts === undefined ? {} : { batteryVolts }),
     };
   };
 

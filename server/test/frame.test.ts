@@ -33,11 +33,8 @@ const composerFor = (departures: readonly Date[]) => {
 const etagOf = async (
   composer: ReturnType<typeof frameComposer>,
   now: Date,
-  batteryVolts?: number,
 ): Promise<string> => {
-  const frame = await composer.compose(
-    batteryVolts === undefined ? { now } : { now, batteryVolts },
-  );
+  const frame = await composer.compose({ now });
   if (!frame.ok) throw new Error(frame.failure.detail);
   return frame.value.etag;
 };
@@ -56,15 +53,6 @@ describe("frame identity", () => {
     const later = await etagOf(composer, new Date("2026-08-10T05:41:00Z"));
 
     expect(later).toBe(early);
-  });
-
-  test("is unchanged when only the battery reading drifts", async () => {
-    const composer = composerFor([SevenSixteen]);
-    const now = new Date("2026-08-10T05:40:00Z");
-
-    expect(await etagOf(composer, now, 3.87)).toBe(
-      await etagOf(composer, now, 3.91),
-    );
   });
 
   test("changes when the date rolls over", async () => {
