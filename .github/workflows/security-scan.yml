@@ -6,6 +6,7 @@ on:
   pull_request:
   schedule:
     - cron: '0 6 * * 1'
+  workflow_dispatch:
 
 # The firmware is not scanned. CodeQL's c-cpp mode needs a real build, and the
 # firmware build requires the four secrets that main.cpp static_asserts on —

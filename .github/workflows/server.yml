@@ -6,6 +6,7 @@ on:
     paths: ["apps/server/**", ".github/workflows/server.yml"]
   pull_request:
     paths: ["apps/server/**", ".github/workflows/server.yml"]
+  workflow_dispatch:
 
 permissions:
   contents: read
