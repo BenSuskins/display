@@ -14,5 +14,12 @@ services:
       - STATION_ORIGIN=${STATION_ORIGIN:-KEL}
       - STATION_DESTINATION=${STATION_DESTINATION:-LST}
       - DEPARTURE_MIN_LEAD_MINUTES=${DEPARTURE_MIN_LEAD_MINUTES:-15}
+      # Optional. Absent means that zone reports itself unconfigured rather
+      # than the service refusing to start and taking the rest down with it.
+      - MET_ACCESS_TOKEN=${MET_ACCESS_TOKEN:-}
+      - HOME_LATITUDE=${HOME_LATITUDE:-51.8382}
+      - HOME_LONGITUDE=${HOME_LONGITUDE:-0.7018}
+      - HUB_ACCESS_TOKEN=${HUB_ACCESS_TOKEN:-}
+      - HUB_BASE_URL=${HUB_BASE_URL:-}
       - TZ=Europe/London
     restart: unless-stopped

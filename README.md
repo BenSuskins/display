@@ -28,7 +28,7 @@ unclipping a battery device off a fridge. See
 | Panel power (PWR on D4) | Working — required, see below |
 | Rendering over SPI | Working |
 | BUSY feedback | Abandoned — unusable on this hardware |
-| Render Service | Trains zone live; weather, calendar, dinner, chores not wired |
+| Render Service | All zones wired: trains, weather, calendar, dinner, chores |
 | Device firmware | Working on hardware — fetches a Frame and renders it |
 | Deep sleep, timer wake | Working |
 | Button wake | Off by default — use RESET, or fit a button and see below |

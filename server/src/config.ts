@@ -18,10 +18,26 @@ export type DepartureConfig = {
   readonly minimumLeadMinutes: number;
 };
 
+/** Absent means the source is not set up; its zone says so and the rest of the
+ * Frame is unaffected. Refusing to boot would take the working zones down too. */
+export type WeatherConfig = {
+  readonly baseUrl: string;
+  readonly accessToken: string;
+  readonly latitude: number;
+  readonly longitude: number;
+};
+
+export type HouseholdConfig = {
+  readonly baseUrl: string;
+  readonly accessToken: string;
+};
+
 export type Config = {
   readonly port: number;
   readonly deviceToken: string;
   readonly departures: DepartureConfig;
+  readonly weather?: WeatherConfig;
+  readonly household?: HouseholdConfig;
   readonly wake: WakeSchedule;
 };
 
@@ -85,6 +101,16 @@ export const readConfig = (env: Environment): Result<Config, ConfigFailure> => {
   const port = positiveNumber(env, "PORT", 8080);
   if (!port.ok) return port;
 
+  // Kelvedon. Only a starting point — override for wherever the display lives.
+  const latitude = positiveNumber(env, "HOME_LATITUDE", 51.8382);
+  if (!latitude.ok) return latitude;
+  const longitude = positiveNumber(env, "HOME_LONGITUDE", 0.7018);
+  if (!longitude.ok) return longitude;
+
+  const metToken = env["MET_ACCESS_TOKEN"];
+  const hubToken = env["HUB_ACCESS_TOKEN"];
+  const hubBaseUrl = env["HUB_BASE_URL"];
+
   return succeed({
     port: port.value,
     deviceToken: deviceToken.value,
@@ -97,6 +123,23 @@ export const readConfig = (env: Environment): Result<Config, ConfigFailure> => {
       shown: 3,
       minimumLeadMinutes: minimumLeadMinutes.value,
     },
+    ...(metToken === undefined || metToken === ""
+      ? {}
+      : {
+          weather: {
+            baseUrl:
+              env["MET_BASE_URL"] ?? "https://data.hub.api.metoffice.gov.uk",
+            accessToken: metToken,
+            latitude: latitude.value,
+            longitude: longitude.value,
+          },
+        }),
+    ...(hubToken === undefined ||
+    hubToken === "" ||
+    hubBaseUrl === undefined ||
+    hubBaseUrl === ""
+      ? {}
+      : { household: { baseUrl: hubBaseUrl, accessToken: hubToken } }),
     wake: {
       ...DefaultWakeSchedule,
       timeZone: env["TZ"] ?? DefaultWakeSchedule.timeZone,

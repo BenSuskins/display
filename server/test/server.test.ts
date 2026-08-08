@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { readConfig, type Config } from "../src/config";
 import { frameComposer } from "../src/frame";
 import { fakeRasteriser } from "../src/render/fakeRasteriser";
+import {
+  fakeHouseholdSource,
+  fakeWeatherSource,
+} from "../src/sources/fakeSources";
 import { FrameByteLength } from "../src/render/packMonochrome";
 import {
   departureAt,
@@ -37,6 +41,8 @@ const buildHandler = async (
           departures: (options.departures ?? []).map((at) => departureAt(at)),
         },
       }),
+      weatherSource: fakeWeatherSource(),
+      householdSource: fakeHouseholdSource(),
       departures: config.departures,
       rasteriser: fakeRasteriser(),
       timeZone: config.wake.timeZone,
@@ -164,6 +170,8 @@ describe("the device-facing surface", () => {
         departureSource: fakeDepartureSource({
           failure: { kind: "unreachable", detail: "no route to host" },
         }),
+        weatherSource: fakeWeatherSource(),
+        householdSource: fakeHouseholdSource(),
         departures: config.departures,
         rasteriser: fakeRasteriser(),
         timeZone: config.wake.timeZone,

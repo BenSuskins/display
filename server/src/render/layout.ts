@@ -1,5 +1,7 @@
 import type { Departure } from "../domain/departure";
+import type { CalendarEntry, Household } from "../domain/household";
 import type { Result } from "../domain/result";
+import type { Weather } from "../domain/weather";
 import type { SourceFailure } from "../sources/departureSource";
 import { PanelHeight, PanelWidth } from "./packMonochrome";
 
@@ -8,6 +10,8 @@ export type FrameView = {
   readonly timeZone: string;
   readonly destination: string;
   readonly departures: Result<readonly Departure[], SourceFailure>;
+  readonly weather: Result<Weather, SourceFailure>;
+  readonly household: Result<Household, SourceFailure>;
 };
 
 const escapeHtml = (value: string): string =>
@@ -41,6 +45,13 @@ const dateIn = (moment: Date, timeZone: string): string =>
     .format(moment)
     .toUpperCase();
 
+/** Why a zone is empty, in words meant for someone standing at a fridge. */
+const reasonFor = (failure: SourceFailure): string =>
+  failure.kind === "unconfigured" ? "not set up" : "unavailable";
+
+const missing = (what: string, failure: SourceFailure): string =>
+  `<p class="unavailable">${what} ${reasonFor(failure)}</p>`;
+
 const stateLabel = (departure: Departure, timeZone: string): string => {
   switch (departure.state.kind) {
     case "onTime":
@@ -55,10 +66,7 @@ const stateLabel = (departure: Departure, timeZone: string): string => {
 };
 
 const departureRows = (view: FrameView): string => {
-  if (!view.departures.ok) {
-    return `<p class="unavailable">Train times unavailable
-      (${escapeHtml(view.departures.failure.kind)})</p>`;
-  }
+  if (!view.departures.ok) return missing("Train times", view.departures.failure);
   if (view.departures.value.length === 0) {
     return `<p class="unavailable">No trains you could still catch</p>`;
   }
@@ -72,6 +80,87 @@ const departureRows = (view: FrameView): string => {
         </div>`,
     )
     .join("");
+};
+
+const weatherSummary = (view: FrameView): string => {
+  if (!view.weather.ok) {
+    return `<span class="unavailable">Weather ${reasonFor(view.weather.failure)}</span>`;
+  }
+
+  const { temperatureCelsius, label, maximumCelsius, minimumCelsius } =
+    view.weather.value;
+
+  return `<span>${temperatureCelsius}&deg; ${escapeHtml(label)}
+    <span class="muted">H${maximumCelsius} L${minimumCelsius}</span></span>`;
+};
+
+const rainLine = (view: FrameView): string => {
+  if (!view.weather.ok || view.weather.value.nextRain === undefined) return "";
+
+  const { probabilityPercent, at } = view.weather.value.nextRain;
+  return `<p class="rain">Rain ${probabilityPercent}% at ${timeIn(at, view.timeZone)}</p>`;
+};
+
+const entryTime = (entry: CalendarEntry, timeZone: string): string =>
+  entry.allDay ? "all day" : timeIn(entry.startsAt, timeZone);
+
+const agendaRows = (view: FrameView): string => {
+  if (!view.household.ok) return missing("Calendar", view.household.failure);
+
+  const { today } = view.household.value;
+  if (today.length === 0) {
+    return `<p class="unavailable">Nothing on today</p>`;
+  }
+
+  return today
+    .slice(0, 7)
+    .map(
+      (entry) => `
+        <div class="entry">
+          <span class="at">${entryTime(entry, view.timeZone)}</span>
+          <span class="what">${escapeHtml(entry.title)}</span>
+        </div>`,
+    )
+    .join("");
+};
+
+const dinnerLine = (view: FrameView): string => {
+  if (!view.household.ok) return missing("Meals", view.household.failure);
+
+  const { dinner } = view.household.value;
+  return dinner === undefined
+    ? `<p class="unavailable">Nothing planned</p>`
+    : `<p class="dinner">${escapeHtml(dinner)}</p>`;
+};
+
+const choreLines = (view: FrameView): string => {
+  if (!view.household.ok) return missing("Chores", view.household.failure);
+
+  const { choresDueToday, overdueChoreCount } = view.household.value;
+  const overdue =
+    overdueChoreCount === 0
+      ? ""
+      : `<span class="overdue">! ${overdueChoreCount} overdue</span>`;
+
+  if (choresDueToday.length === 0) {
+    return `<div class="chores"><span class="unavailable">None due today</span>${overdue}</div>`;
+  }
+
+  const due = choresDueToday
+    .slice(0, 3)
+    .map(
+      (chore) =>
+        `<span class="chore">${escapeHtml(chore.name)}${
+          chore.assignedTo === undefined
+            ? ""
+            : ` &ndash; ${escapeHtml(chore.assignedTo)}`
+        }</span>`,
+    )
+    .join("");
+
+  // The overdue count shares the wrapping row rather than sitting under it:
+  // the band has a fixed height and a second line overflows it.
+  return `<div class="chores">${due}${overdue}</div>`;
 };
 
 const startOfLocalDay = (moment: Date, timeZone: string): Date => {
@@ -126,24 +215,46 @@ export const renderFrameHtml = (view: FrameView): string => `
     padding: 0 20px; border-bottom: 3px solid #000;
     font-size: 26px; font-weight: bold; letter-spacing: 1px;
   }
-  main { display: grid; grid-template-columns: 340px 1fr; }
-  section { padding: 16px 20px; }
+  header .muted { font-weight: normal; font-size: 20px; }
+  main { display: grid; grid-template-columns: 340px 1fr; min-height: 0; }
+  section { padding: 14px 20px; min-height: 0; overflow: hidden; }
   section + section { border-left: 3px solid #000; }
   h2 {
-    margin: 0 0 12px; font-size: 18px; letter-spacing: 2px;
+    margin: 0 0 10px; font-size: 17px; letter-spacing: 2px;
     text-transform: uppercase; border-bottom: 1px solid #000;
-    padding-bottom: 6px;
+    padding-bottom: 5px;
   }
   .train {
     display: flex; justify-content: space-between; align-items: baseline;
-    padding: 9px 0; border-bottom: 1px dotted #000;
+    padding: 7px 0; border-bottom: 1px dotted #000;
   }
-  .time { font-size: 40px; font-weight: bold; font-variant-numeric: tabular-nums; }
-  .state { font-size: 19px; font-weight: bold; }
+  .time { font-size: 38px; font-weight: bold; font-variant-numeric: tabular-nums; }
+  .state { font-size: 18px; font-weight: bold; }
   .state.cancelled, .state.delayedWithoutEstimate {
     background: #000; color: #fff; padding: 3px 8px;
   }
-  .unavailable, .pending { font-size: 18px; font-style: italic; }
+  .rain { margin: 12px 0 0; font-size: 18px; font-weight: bold; }
+  .entry { display: flex; gap: 14px; align-items: baseline; padding: 5px 0; }
+  .entry + .entry { border-top: 1px dotted #000; }
+  .at {
+    font-size: 21px; font-weight: bold; min-width: 86px;
+    font-variant-numeric: tabular-nums;
+  }
+  .what {
+    font-size: 21px; flex: 1;
+    /* A flex child will not shrink below its content without this, so
+       overflow never engages and long titles run off the panel. */
+    min-width: 0;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .dinner { margin: 0; font-size: 26px; font-weight: bold; }
+  .chores { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chore { font-size: 19px; border: 2px solid #000; padding: 2px 8px; }
+  .overdue {
+    margin: 0; font-size: 18px; font-weight: bold;
+    background: #000; color: #fff; padding: 4px 10px;
+  }
+  .unavailable { margin: 0; font-size: 17px; font-style: italic; }
   .bands { display: grid; grid-template-columns: 340px 1fr; border-top: 3px solid #000; }
   footer {
     display: flex; justify-content: space-between; align-items: center;
@@ -153,23 +264,24 @@ export const renderFrameHtml = (view: FrameView): string => `
 
 <header>
   <span>${escapeHtml(dateIn(view.renderedAt, view.timeZone))}</span>
-  <span class="pending">weather not wired yet</span>
+  ${weatherSummary(view)}
 </header>
 
 <main>
   <section>
     <h2>Trains &rarr; ${escapeHtml(view.destination)}</h2>
     ${departureRows(view)}
+    ${rainLine(view)}
   </section>
   <section>
     <h2>Today</h2>
-    <p class="pending">Calendar not wired yet</p>
+    ${agendaRows(view)}
   </section>
 </main>
 
 <div class="bands">
-  <section><h2>Dinner</h2><p class="pending">Not wired yet</p></section>
-  <section><h2>Chores</h2><p class="pending">Not wired yet</p></section>
+  <section><h2>Dinner</h2>${dinnerLine(view)}</section>
+  <section><h2>Chores</h2>${choreLines(view)}</section>
 </div>
 
 <footer>

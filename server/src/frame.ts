@@ -9,6 +9,8 @@ import {
 import type { FrameBytes } from "./render/packMonochrome";
 import type { RasterFailure, Rasteriser } from "./render/rasteriser";
 import type { DepartureSource } from "./sources/departureSource";
+import type { HouseholdSource } from "./sources/householdSource";
+import type { WeatherSource } from "./sources/weatherSource";
 
 export type Frame = {
   readonly bytes: FrameBytes;
@@ -30,6 +32,8 @@ export type FrameComposer = {
 
 export type FrameComposerParts = {
   readonly departureSource: DepartureSource;
+  readonly weatherSource: WeatherSource;
+  readonly householdSource: HouseholdSource;
   readonly departures: DepartureConfig;
   readonly rasteriser: Rasteriser;
   readonly timeZone: string;
@@ -37,17 +41,27 @@ export type FrameComposerParts = {
 
 export const frameComposer = ({
   departureSource,
+  weatherSource,
+  householdSource,
   departures: departureConfig,
   rasteriser,
   timeZone,
 }: FrameComposerParts): FrameComposer => {
   const buildView = async ({ now }: FrameRequest): Promise<FrameView> => {
-    const board = await departureSource.board();
+    // Fetched together and kept as Results, so one dead upstream costs its own
+    // zone and nothing else.
+    const [board, weather, household] = await Promise.all([
+      departureSource.board(),
+      weatherSource.weather(now),
+      householdSource.household(now),
+    ]);
 
     return {
       renderedAt: now,
       timeZone,
       destination: departureConfig.destinationCrs,
+      weather,
+      household,
       departures: board.ok
         ? succeed(
             selectCatchableDepartures({

@@ -2,6 +2,8 @@ import type { Departure } from "../domain/departure";
 import type { Result } from "../domain/result";
 
 export type SourceFailure =
+  /** No credentials for this source, so it was never asked. */
+  | { readonly kind: "unconfigured"; readonly detail: string }
   | { readonly kind: "unreachable"; readonly detail: string }
   | { readonly kind: "rejected"; readonly status: number }
   | { readonly kind: "malformed"; readonly detail: string };

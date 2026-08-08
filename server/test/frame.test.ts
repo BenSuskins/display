@@ -4,6 +4,10 @@ import { readConfig, type Config } from "../src/config";
 import { frameComposer } from "../src/frame";
 import { fakeRasteriser } from "../src/render/fakeRasteriser";
 import {
+  fakeHouseholdSource,
+  fakeWeatherSource,
+} from "../src/sources/fakeSources";
+import {
   departureAt,
   fakeDepartureSource,
 } from "../src/sources/fakeDepartureSource";
@@ -24,6 +28,8 @@ const composerFor = (departures: readonly Date[]) => {
     departureSource: fakeDepartureSource({
       board: { departures: departures.map((at) => departureAt(at)) },
     }),
+    weatherSource: fakeWeatherSource(),
+    householdSource: fakeHouseholdSource(),
     departures: config.departures,
     rasteriser: fakeRasteriser(),
     timeZone: config.wake.timeZone,
@@ -100,6 +106,8 @@ describe("frame identity", () => {
         departureSource: fakeDepartureSource({
           board: { departures: [departureAt(SevenSixteen, state)] },
         }),
+        weatherSource: fakeWeatherSource(),
+        householdSource: fakeHouseholdSource(),
         departures: config.departures,
         rasteriser: fakeRasteriser(),
         timeZone: config.wake.timeZone,

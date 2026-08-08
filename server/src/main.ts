@@ -1,8 +1,13 @@
 import { readConfig } from "./config";
+import { fail } from "./domain/result";
 import { frameComposer } from "./frame";
 import { chromiumRasteriser } from "./render/rasteriser";
 import { handleRequest } from "./server";
+import { familyHubHouseholdSource } from "./sources/familyHubHouseholdSource";
+import type { HouseholdSource } from "./sources/householdSource";
 import { huxley2DepartureSource } from "./sources/huxley2DepartureSource";
+import { metOfficeWeatherSource } from "./sources/metOfficeWeatherSource";
+import type { WeatherSource } from "./sources/weatherSource";
 
 const config = readConfig(Bun.env);
 
@@ -11,7 +16,27 @@ if (!config.ok) {
   process.exit(1);
 }
 
-const { departures, wake, port, deviceToken } = config.value;
+const { departures, weather, household, wake, port, deviceToken } = config.value;
+
+/** A source with no credentials answers honestly rather than being absent, so
+ * its zone can say why it is empty instead of the page pretending it is fine. */
+const unconfigured = (name: string, variables: string) => ({
+  kind: "unconfigured" as const,
+  detail: `${name} needs ${variables}`,
+});
+
+const weatherSource: WeatherSource =
+  weather === undefined
+    ? { weather: async () => fail(unconfigured("weather", "MET_ACCESS_TOKEN")) }
+    : metOfficeWeatherSource({ ...weather, timeZone: wake.timeZone });
+
+const householdSource: HouseholdSource =
+  household === undefined
+    ? {
+        household: async () =>
+          fail(unconfigured("family hub", "HUB_ACCESS_TOKEN and HUB_BASE_URL")),
+      }
+    : familyHubHouseholdSource({ ...household, timeZone: wake.timeZone });
 
 const rasteriser = chromiumRasteriser();
 
@@ -25,6 +50,8 @@ const handler = await handleRequest({
       destinationCrs: departures.destinationCrs,
       rows: departures.rows,
     }),
+    weatherSource,
+    householdSource,
     departures,
     rasteriser,
     timeZone: wake.timeZone,
@@ -36,6 +63,8 @@ const server = Bun.serve({ port, fetch: handler });
 console.log(
   `render service on :${server.port} — ${departures.originCrs} to ` +
     `${departures.destinationCrs}, ${wake.timeZone}, ` +
+    `weather ${weather === undefined ? "off" : "on"}, ` +
+    `family hub ${household === undefined ? "off" : "on"}, ` +
     `device token ${deviceToken.length} chars`,
 );
 
