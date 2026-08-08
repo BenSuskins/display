@@ -68,12 +68,15 @@ is a browser reload rather than a 15-second round trip to the Panel.
 ### Frame content
 
 Fixed zones. Content within them varies by Daypart; the shape never moves.
+Exactly one zone — the left column of the middle band — is Daypart-dependent.
+
+The **commute** Daypart, 06:00–09:00 local:
 
 ```
 +-------------------------------------------------------------+
 | SATURDAY 8 AUGUST                    18` Cloudy   H21 L13   |
 +---------------------------+---------------------------------+
-| TRAINS -> LONDON LIV ST   | TODAY                           |
+| TRAINS -> LST             | TODAY                           |
 |                           |                                 |
 |  07:16        ON TIME     |  09:00  Standup                 |
 |  07:31        EXP 07:36   |  13:00  Dentist                 |
@@ -81,28 +84,62 @@ Fixed zones. Content within them varies by Daypart; the shape never moves.
 |                           |  19:00  Book club               |
 |  rain 30% at 15:00        |                                 |
 +---------------------------+---------------------------------+
-| DINNER                    | CHORES  3 due                   |
+| DINNER                    | CHORES                ! 2 over  |
 | Chicken traybake          | Bins - Ben   Hoover - Sam       |
-|                           | ! 2 overdue                     |
 +-------------------------------------------------------------+
-| rendered 08:31                               battery 78%    |
+```
+
+The **day** Daypart, every other hour. The trains have gone, so the zone goes
+to the weather at the size the departures had — and the header drops its
+weather line rather than print the same three numbers twice:
+
+```
++-------------------------------------------------------------+
+| SATURDAY 8 AUGUST                                           |
++---------------------------+---------------------------------+
+| WEATHER                   | TODAY                           |
+|                           |                                 |
+|  18`                      |  09:00  Standup                 |
+|                           |  13:00  Dentist                 |
+|  Cloudy                   |  16:30  Ellie swimming lesson   |
+|  H21  L13                 |  19:00  Book club               |
+|  Rain 30% at 15:00        |                                 |
++---------------------------+---------------------------------+
+| DINNER                    | CHORES                ! 2 over  |
+| Chicken traybake          | Bins - Ben   Hoover - Sam       |
 +-------------------------------------------------------------+
 ```
 
 Trains show the next three **Catchable** departures — time and Departure State
-only. No platform; Kelvedon has one. Five are fetched so the filter has room.
+only. No platform; Kelvedon has one. Eight are fetched so the filter has room.
+Outside the commute window no board is fetched at all: nothing would show it,
+and Huxley2 is the flakiest thing we depend on.
+
+The rain line states the negative in the day Daypart ("No rain expected today")
+and stays silent in the commute one. A blank space is ambiguous when the zone is
+about the weather and merely quiet when it is about trains.
 
 ### Wake schedule
 
+The dense window *is* the commute window — `COMMUTE_STARTS_AT` and
+`COMMUTE_ENDS_AT` set both, so the Panel can never show a board it is not
+waking often enough to keep worth reading.
+
 | Window | Interval | Why |
 | --- | --- | --- |
-| 06:30–08:00 | 10 min | The 06:40 wake-up to 07:16 train window |
-| 08:00–22:00 | 30 min | Ambient |
-| 22:00–06:30 | 30 min | Almost all `304`, so nearly free, and no long sleep to drift |
+| 06:00–09:00 | 10 min | The commute Daypart: departures are on the Panel, so staleness is capped at 10 min |
+| 09:00–22:00 | 30 min | Ambient |
+| 22:00–06:00 | 30 min | Almost all `304`, so nearly free, and no long sleep to drift |
 
 Never longer than 30 minutes, per ADR-0002. Estimated ~45 Wakes producing ~12
 redraws a day, ~7 mAh/day — comfortably over a year on 5000 mAh, subject to the
 deep-sleep measurement below.
+
+Widening the dense window from 06:30–08:00 to the full commute Daypart costs
+~9 more Wakes a day, plus a handful more redraws — a board that has moved is a
+changed Frame, so those extra Wakes are not all `304`s. A few percent of the
+budget above, and the reason it is worth paying is that the alternative is a
+departure board on the fridge that is half an hour out of date.
 
 ## Configuration
 
@@ -115,6 +152,7 @@ All environment variables, injected by Ansible at deploy.
 | `HUXLEY_BASE_URL`, `DARWIN_ACCESS_TOKEN` | Public instance to start |
 | `STATION_ORIGIN=KEL`, `STATION_DESTINATION=LST` | Both CRS codes verified |
 | `DEPARTURE_MIN_LEAD_MINUTES=15` | 10 min walk plus slack |
+| `COMMUTE_STARTS_AT=06:00`, `COMMUTE_ENDS_AT=09:00` | The commute Daypart, and the dense Wake window with it |
 | `DEVICE_TOKEN` | Shared bearer for the Device |
 | `TZ=Europe/London` | The Render Service owns BST |
 

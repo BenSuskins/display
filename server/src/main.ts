@@ -16,7 +16,8 @@ if (!config.ok) {
   process.exit(1);
 }
 
-const { departures, weather, household, wake, port, deviceToken } = config.value;
+const { departures, weather, household, daypart, timeZone, port, deviceToken } =
+  config.value;
 
 /** A source with no credentials answers honestly rather than being absent, so
  * its zone can say why it is empty instead of the page pretending it is fine. */
@@ -28,7 +29,7 @@ const unconfigured = (name: string, variables: string) => ({
 const weatherSource: WeatherSource =
   weather === undefined
     ? { weather: async () => fail(unconfigured("weather", "MET_ACCESS_TOKEN")) }
-    : metOfficeWeatherSource({ ...weather, timeZone: wake.timeZone });
+    : metOfficeWeatherSource({ ...weather, timeZone });
 
 const householdSource: HouseholdSource =
   household === undefined
@@ -36,7 +37,11 @@ const householdSource: HouseholdSource =
         household: async () =>
           fail(unconfigured("family hub", "HUB_ACCESS_TOKEN and HUB_BASE_URL")),
       }
-    : familyHubHouseholdSource({ ...household, timeZone: wake.timeZone });
+    : familyHubHouseholdSource({ ...household, timeZone });
+
+const asLocalTime = (minuteOfDay: number): string =>
+  `${String(Math.floor(minuteOfDay / 60)).padStart(2, "0")}:` +
+  `${String(minuteOfDay % 60).padStart(2, "0")}`;
 
 const rasteriser = chromiumRasteriser();
 
@@ -49,13 +54,13 @@ const handler = await handleRequest({
       originCrs: departures.originCrs,
       destinationCrs: departures.destinationCrs,
       rows: departures.rows,
-      timeZone: wake.timeZone,
+      timeZone,
     }),
     weatherSource,
     householdSource,
     departures,
     rasteriser,
-    timeZone: wake.timeZone,
+    daypart,
   }),
 });
 
@@ -63,7 +68,9 @@ const server = Bun.serve({ port, fetch: handler });
 
 console.log(
   `render service on :${server.port} — ${departures.originCrs} to ` +
-    `${departures.destinationCrs}, ${wake.timeZone}, ` +
+    `${departures.destinationCrs}, ${timeZone}, ` +
+    `trains ${asLocalTime(daypart.commuteStartsAtMinute)}–` +
+    `${asLocalTime(daypart.commuteEndsAtMinute)}, ` +
     `weather ${weather === undefined ? "off" : "on"}, ` +
     `family hub ${household === undefined ? "off" : "on"}, ` +
     `device token ${deviceToken.length} chars`,

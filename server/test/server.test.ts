@@ -45,7 +45,7 @@ const buildHandler = async (
       householdSource: fakeHouseholdSource(),
       departures: config.departures,
       rasteriser: fakeRasteriser(),
-      timeZone: config.wake.timeZone,
+      daypart: config.daypart,
     }),
   });
 };
@@ -174,7 +174,7 @@ describe("the device-facing surface", () => {
         householdSource: fakeHouseholdSource(),
         departures: config.departures,
         rasteriser: fakeRasteriser(),
-        timeZone: config.wake.timeZone,
+        daypart: config.daypart,
       }),
     });
 

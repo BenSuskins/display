@@ -52,6 +52,21 @@ stand in for.
 
 ## Design notes
 
+**Two Dayparts, one shape.** Between `COMMUTE_STARTS_AT` and `COMMUTE_ENDS_AT`
+(06:00–09:00 by default) the left zone holds the departure board; the rest of
+the day it holds the weather. Nothing else on the page moves, so reading the
+fridge at 09:05 is not a matter of re-learning where anything is. Outside the
+window no board is fetched at all — nothing would show it.
+
+The same two settings fix the Device's dense Wake window, so a Panel can never
+show departures it is only refreshing every half hour. To see either view
+without a panel:
+
+```sh
+bun run scripts/sampleFrame.ts sample.bin        # 06:40, the commute view
+bun run scripts/sampleFrame.ts day.bin 14:00     # the day view
+```
+
 **Pure black and white, no greys.** The rasteriser thresholds at mid grey, so a
 page drawn only in `#000` and `#fff` renders identically in your browser and on
 the Panel. Introducing greys means guessing how they will threshold.
