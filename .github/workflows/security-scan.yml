@@ -8,16 +8,28 @@ on:
     - cron: '0 6 * * 1'
   workflow_dispatch:
 
+# Inlined rather than calling repo-templates/security-scan.yml — see the note in
+# server.yml about private reusable workflows and public consumers.
+#
 # The firmware is not scanned. CodeQL's c-cpp mode needs a real build, and the
-# firmware build requires the four secrets that main.cpp static_asserts on —
-# security-scan.yml has no way to pass them through.
+# firmware build requires the four secrets main.cpp static_asserts on.
 jobs:
   codeql:
+    runs-on: ubuntu-latest
     permissions:
       security-events: write
       packages: read
       actions: read
       contents: read
-    uses: bensuskins/repo-templates/.github/workflows/security-scan.yml@main
-    with:
-      languages: '[{"language":"javascript-typescript","build-mode":"none"}]'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"

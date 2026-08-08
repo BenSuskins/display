@@ -36,28 +36,32 @@ jobs:
       - name: Typecheck and test
         run: bun run check
 
-  # publish-container.yml takes tag suffixes as an input, and GitHub expressions
-  # have no substring function, so the short SHA has to be computed in a step.
-  tag:
+  # Deliberately not repo-templates/publish-container.yml. That repo is private,
+  # and GitHub's private-repo access policy only grants other *private* repos
+  # access — a public consumer fails to resolve the `uses:`, which fails the
+  # whole workflow file before any job starts, taking the tests above down with
+  # it. Revisit if repo-templates is ever made public.
+  docker:
     if: ${{ github.ref == 'refs/heads/main' }}
     needs: check
     runs-on: ubuntu-latest
-    outputs:
-      short-sha: ${{ steps.short.outputs.value }}
-    steps:
-      - id: short
-        run: echo "value=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-
-  publish:
-    if: ${{ github.ref == 'refs/heads/main' }}
-    needs: tag
     permissions:
       contents: read
       packages: write
-    uses: bensuskins/repo-templates/.github/workflows/publish-container.yml@main
-    with:
-      image: ghcr.io/bensuskins/display
-      context: apps/server
-      tags: |
-        latest
-        ${{ needs.tag.outputs.short-sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        run: |
+          COMMIT_SHA=${GITHUB_SHA::7}
+          IMAGE_NAME=ghcr.io/bensuskins/display
+          docker build -t $IMAGE_NAME:latest -t $IMAGE_NAME:$COMMIT_SHA apps/server/
+          docker push $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:$COMMIT_SHA
