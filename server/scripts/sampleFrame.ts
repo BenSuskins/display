@@ -10,9 +10,10 @@ import { fakeHouseholdSource, fakeWeatherSource } from "../src/sources/fakeSourc
  * are present on purpose: a cancelled train, a long event title, an overdue
  * chore count.
  *
- *   bun run scripts/sampleFrame.ts sample.bin
+ *   bun run scripts/sampleFrame.ts sample.bin          # 06:40, the commute view
+ *   bun run scripts/sampleFrame.ts day.bin 14:00       # after 09:00, the day view
  */
-const [, , outputPath = "sample.bin"] = Bun.argv;
+const [, , outputPath = "sample.bin", localTime = "06:40"] = Bun.argv;
 
 const config = readConfig({
   DARWIN_ACCESS_TOKEN: "sample",
@@ -20,8 +21,10 @@ const config = readConfig({
 });
 if (!config.ok) throw new Error(config.failure.detail);
 
-const now = new Date("2026-08-10T05:40:00Z"); // 06:40 local, BST
+// The sample day is in British Summer Time, so local is UTC+1 throughout and
+// `at` takes the UTC side of that.
 const at = (time: string) => new Date(`2026-08-10T${time}:00Z`);
+const now = new Date(at(localTime).getTime() - 60 * 60_000);
 
 const rasteriser = chromiumRasteriser();
 
@@ -70,7 +73,7 @@ const composer = frameComposer({
   }),
   departures: config.value.departures,
   rasteriser,
-  timeZone: config.value.wake.timeZone,
+  daypart: config.value.daypart,
 });
 
 const frame = await composer.compose({ now });

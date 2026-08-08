@@ -1,3 +1,4 @@
+import type { Daypart } from "../domain/daypart";
 import type { Departure } from "../domain/departure";
 import type { CalendarEntry, Household } from "../domain/household";
 import type { Result } from "../domain/result";
@@ -8,8 +9,13 @@ import { PanelHeight, PanelWidth } from "./packMonochrome";
 export type FrameView = {
   readonly renderedAt: Date;
   readonly timeZone: string;
+  /** Which zone holds the left column, and nothing else. The shape of the page
+   * is the same in both — see the plan: fixed zones, varying content. */
+  readonly daypart: Daypart;
   readonly destination: string;
-  readonly departures: Result<readonly Departure[], SourceFailure>;
+  /** Absent in the day Daypart. The Frame does not show trains then, so the
+   * Render Service does not ask Huxley2 for any. */
+  readonly departures?: Result<readonly Departure[], SourceFailure>;
   readonly weather: Result<Weather, SourceFailure>;
   readonly household: Result<Household, SourceFailure>;
 };
@@ -66,12 +72,18 @@ const stateLabel = (departure: Departure, timeZone: string): string => {
 };
 
 const departureRows = (view: FrameView): string => {
-  if (!view.departures.ok) return missing("Train times", view.departures.failure);
-  if (view.departures.value.length === 0) {
+  const { departures } = view;
+  // Only reachable if a commute Frame were built without a board, which the
+  // composer does not do. Saying so beats rendering an empty zone.
+  if (departures === undefined) {
+    return `<p class="unavailable">Train times unavailable</p>`;
+  }
+  if (!departures.ok) return missing("Train times", departures.failure);
+  if (departures.value.length === 0) {
     return `<p class="unavailable">No trains you could still catch</p>`;
   }
 
-  return view.departures.value
+  return departures.value
     .map(
       (departure) => `
         <div class="train">
@@ -82,6 +94,12 @@ const departureRows = (view: FrameView): string => {
     .join("");
 };
 
+/**
+ * The header's weather, shown only in the commute Daypart. The day Daypart
+ * gives weather a zone of its own directly below, and the same three numbers
+ * printed small an inch above a large copy of themselves is not a summary,
+ * it is a duplicate.
+ */
 const weatherSummary = (view: FrameView): string => {
   if (!view.weather.ok) {
     return `<span class="unavailable">Weather ${reasonFor(view.weather.failure)}</span>`;
@@ -100,6 +118,38 @@ const rainLine = (view: FrameView): string => {
   const { probabilityPercent, at } = view.weather.value.nextRain;
   return `<p class="rain">Rain ${probabilityPercent}% at ${timeIn(at, view.timeZone)}</p>`;
 };
+
+/**
+ * The day Daypart's left zone: the weather, at the size the trains had.
+ *
+ * On the way out of the door the header line is enough. For the rest of the day
+ * it is the thing most worth a glance from across the kitchen, and it is the
+ * one zone whose data the Render Service already fetches and barely shows.
+ */
+const weatherOutlook = (view: FrameView): string => {
+  if (!view.weather.ok) return missing("Weather", view.weather.failure);
+
+  const { temperatureCelsius, label, maximumCelsius, minimumCelsius } =
+    view.weather.value;
+
+  return `
+    <div class="outlook">
+      <p class="degrees">${temperatureCelsius}&deg;</p>
+      <p class="condition">${escapeHtml(label)}</p>
+      <p class="range">H${maximumCelsius} &nbsp;L${minimumCelsius}</p>
+      ${rainOutlookLine(view)}
+    </div>`;
+};
+
+/**
+ * Unlike the commute zone's rain line, this states the negative. A blank space
+ * where rain would be is ambiguous — it could equally mean the forecast is
+ * missing — and the answer is worth having before you hang the washing out.
+ */
+const rainOutlookLine = (view: FrameView): string =>
+  !view.weather.ok || view.weather.value.nextRain === undefined
+    ? `<p class="rain">No rain expected today</p>`
+    : rainLine(view);
 
 const entryTime = (entry: CalendarEntry, timeZone: string): string =>
   entry.allDay ? "all day" : timeIn(entry.startsAt, timeZone);
@@ -174,6 +224,21 @@ const choreLines = (view: FrameView): string => {
     )
     .join("")}</div>`;
 };
+
+/**
+ * The left column of `main`, which is the only zone a Daypart changes.
+ *
+ * Both branches fill the same box; nothing below or beside them moves. The
+ * plan's rule is that the shape holds and the content varies, so that someone
+ * reading the fridge at 09:05 is not re-learning where anything is.
+ */
+const daypartZone = (view: FrameView): string =>
+  view.daypart === "commute"
+    ? `<h2>Trains &rarr; ${escapeHtml(view.destination)}</h2>
+       ${departureRows(view)}
+       ${rainLine(view)}`
+    : `<h2>Weather</h2>
+       ${weatherOutlook(view)}`;
 
 const startOfLocalDay = (moment: Date, timeZone: string): Date => {
   const isoDate = new Intl.DateTimeFormat("en-CA", {
@@ -251,6 +316,22 @@ export const renderFrameHtml = (view: FrameView): string => `
     background: #000; color: #fff; padding: 3px 8px;
   }
   .rain { margin: 12px 0 0; font-size: 18px; font-weight: bold; }
+  /* Stacked rather than set beside the temperature: "Thunder showers" is the
+     longest label the Met Office sends, and it does not fit next to two digits
+     at this size in a 340px zone. On its own line it has the full width. */
+  .degrees {
+    margin: 6px 0 0; font-size: 92px; font-weight: bold; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .condition {
+    margin: 12px 0 0; font-size: 30px; font-weight: bold;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .range {
+    margin: 14px 0 0; font-size: 26px; font-weight: bold;
+    font-variant-numeric: tabular-nums;
+  }
+  .outlook .rain { margin-top: 16px; font-size: 21px; }
   .entry { display: flex; gap: 14px; align-items: baseline; padding: 5px 0; }
   .entry + .entry { border-top: 1px dotted #000; }
   .at {
@@ -286,14 +367,12 @@ export const renderFrameHtml = (view: FrameView): string => `
 <header>
   <span>${escapeHtml(dateIn(view.renderedAt, view.timeZone))}
     <span class="rendered">&middot; ${timeIn(view.renderedAt, view.timeZone)}</span></span>
-  ${weatherSummary(view)}
+  ${view.daypart === "commute" ? weatherSummary(view) : ""}
 </header>
 
 <main>
   <section>
-    <h2>Trains &rarr; ${escapeHtml(view.destination)}</h2>
-    ${departureRows(view)}
-    ${rainLine(view)}
+    ${daypartZone(view)}
   </section>
   <section>
     <h2>Today</h2>

@@ -1,4 +1,5 @@
 import type { DepartureConfig } from "./config";
+import { daypartAt, type DaypartSchedule } from "./domain/daypart";
 import { selectCatchableDepartures } from "./domain/departure";
 import { fail, succeed, type Result } from "./domain/result";
 import {
@@ -36,7 +37,7 @@ export type FrameComposerParts = {
   readonly householdSource: HouseholdSource;
   readonly departures: DepartureConfig;
   readonly rasteriser: Rasteriser;
-  readonly timeZone: string;
+  readonly daypart: DaypartSchedule;
 };
 
 export const frameComposer = ({
@@ -45,33 +46,42 @@ export const frameComposer = ({
   householdSource,
   departures: departureConfig,
   rasteriser,
-  timeZone,
+  daypart: daypartSchedule,
 }: FrameComposerParts): FrameComposer => {
   const buildView = async ({ now }: FrameRequest): Promise<FrameView> => {
+    const daypart = daypartAt(now, daypartSchedule);
+
     // Fetched together and kept as Results, so one dead upstream costs its own
-    // zone and nothing else.
+    // zone and nothing else. Outside the commute window the board is not asked
+    // for at all: nothing on the Frame would show it, and Huxley2's public
+    // instance is the flakiest thing we depend on.
     const [board, weather, household] = await Promise.all([
-      departureSource.board(now),
+      daypart === "commute" ? departureSource.board(now) : undefined,
       weatherSource.weather(now),
       householdSource.household(now),
     ]);
 
     return {
       renderedAt: now,
-      timeZone,
+      timeZone: daypartSchedule.timeZone,
+      daypart,
       destination: departureConfig.destinationCrs,
       weather,
       household,
-      departures: board.ok
-        ? succeed(
-            selectCatchableDepartures({
-              departures: board.value.departures,
-              now,
-              minimumLeadMinutes: departureConfig.minimumLeadMinutes,
-              limit: departureConfig.shown,
-            }),
-          )
-        : board,
+      ...(board === undefined
+        ? {}
+        : {
+            departures: board.ok
+              ? succeed(
+                  selectCatchableDepartures({
+                    departures: board.value.departures,
+                    now,
+                    minimumLeadMinutes: departureConfig.minimumLeadMinutes,
+                    limit: departureConfig.shown,
+                  }),
+                )
+              : board,
+          }),
     };
   };
 

@@ -1,3 +1,5 @@
+import { localMinuteOfDay } from "./localTime";
+
 export type WakeSchedule = {
   readonly timeZone: string;
   /** Local wall-clock minutes past midnight, so `6 * 60 + 30` is 06:30. */
@@ -16,20 +18,6 @@ export type NextWakeQuery = {
 };
 
 const SecondsPerMinute = 60;
-
-const localMinuteOfDay = (moment: Date, timeZone: string): number => {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(moment);
-
-  const valueOf = (type: "hour" | "minute"): number =>
-    Number(parts.find((part) => part.type === type)?.value ?? 0);
-
-  return valueOf("hour") * 60 + valueOf("minute");
-};
 
 /**
  * How long the Device should sleep before its next Wake.

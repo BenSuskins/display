@@ -41,7 +41,10 @@ _Avoid_: backend, API, dashboard service
 
 **Daypart**:
 The period the Render Service uses to decide what a Frame contains. A Render
-Service concept; the Device has no idea it exists.
+Service concept; the Device has no idea it exists. There are two: **commute**,
+06:00–09:00 local, when the left zone holds the trains; and **day**, the rest of
+it, when that zone holds the weather. Only that zone changes — the shape of the
+page is the same in both.
 _Avoid_: mode, time of day, profile
 
 **Staleness**:

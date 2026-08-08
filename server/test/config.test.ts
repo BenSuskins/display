@@ -44,13 +44,43 @@ describe("readConfig", () => {
     );
   });
 
-  test("defaults the wake schedule to the commute window", () => {
-    const { wake } = configOrThrow(complete);
+  test("defaults the commute window to 06:00–09:00", () => {
+    const { daypart } = configOrThrow(complete);
 
-    expect(wake.denseWindowStartsAtMinute).toBe(6 * 60 + 30);
-    expect(wake.denseWindowEndsAtMinute).toBe(8 * 60);
+    expect(daypart.commuteStartsAtMinute).toBe(6 * 60);
+    expect(daypart.commuteEndsAtMinute).toBe(9 * 60);
+    expect(daypart.timeZone).toBe("Europe/London");
+  });
+
+  test("wakes densely for exactly the window that shows trains", () => {
+    // Two settings that must never disagree, so only one of them is a setting.
+    const { wake, daypart } = configOrThrow(complete);
+
+    expect(wake.denseWindowStartsAtMinute).toBe(daypart.commuteStartsAtMinute);
+    expect(wake.denseWindowEndsAtMinute).toBe(daypart.commuteEndsAtMinute);
     expect(wake.denseIntervalMinutes).toBe(10);
     expect(wake.timeZone).toBe("Europe/London");
+  });
+
+  test("lets the commute window be moved, and moves the dense wakes with it", () => {
+    const { wake, daypart } = configOrThrow({
+      ...complete,
+      COMMUTE_STARTS_AT: "07:15",
+      COMMUTE_ENDS_AT: "10:00",
+    });
+
+    expect(daypart.commuteStartsAtMinute).toBe(7 * 60 + 15);
+    expect(daypart.commuteEndsAtMinute).toBe(10 * 60);
+    expect(wake.denseWindowStartsAtMinute).toBe(7 * 60 + 15);
+    expect(wake.denseWindowEndsAtMinute).toBe(10 * 60);
+  });
+
+  test("takes the time zone for both schedules from TZ", () => {
+    const config = configOrThrow({ ...complete, TZ: "Europe/Dublin" });
+
+    expect(config.timeZone).toBe("Europe/Dublin");
+    expect(config.daypart.timeZone).toBe("Europe/Dublin");
+    expect(config.wake.timeZone).toBe("Europe/Dublin");
   });
 
   test("never schedules a sleep long enough to drift", () => {
@@ -91,6 +121,45 @@ describe("readConfig", () => {
       const result = readConfig({
         ...complete,
         DEPARTURE_MIN_LEAD_MINUTES: "-5",
+      });
+
+      expect(result.ok).toBe(false);
+    });
+
+    test("refuses a commute window time that is not a clock time", () => {
+      expect(readConfig({ ...complete, COMMUTE_STARTS_AT: "6am" }).ok).toBe(
+        false,
+      );
+      expect(readConfig({ ...complete, COMMUTE_STARTS_AT: "25:00" }).ok).toBe(
+        false,
+      );
+      expect(readConfig({ ...complete, COMMUTE_ENDS_AT: "09:70" }).ok).toBe(
+        false,
+      );
+    });
+
+    test("refuses a commute window that ends before it starts", () => {
+      const result = readConfig({
+        ...complete,
+        COMMUTE_STARTS_AT: "09:00",
+        COMMUTE_ENDS_AT: "06:00",
+      });
+
+      expect(result).toEqual({
+        ok: false,
+        failure: {
+          kind: "invalid",
+          detail:
+            "COMMUTE_ENDS_AT must be later in the day than COMMUTE_STARTS_AT",
+        },
+      });
+    });
+
+    test("refuses a commute window of no length at all", () => {
+      const result = readConfig({
+        ...complete,
+        COMMUTE_STARTS_AT: "07:00",
+        COMMUTE_ENDS_AT: "07:00",
       });
 
       expect(result.ok).toBe(false);
