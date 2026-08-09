@@ -19,8 +19,8 @@ decisions are in [`docs/adr/`](../docs/adr/).
       |            |              +--> Huxley2 public -> Darwin  (KEL -> LST)
       |            +-------------------> Met Office DataHub
       +--------------------------------> Family Hub  /api/dashboard
-                                                      /api/calendar?view=day
-                                                      /api/meals?week=
+                                                      /api/calendar?view=week
+                                                      /api/users
 ```
 
 The Device sends its battery voltage and the hash of what it is showing. It gets
@@ -76,13 +76,16 @@ The **commute** Daypart, 06:00–09:00 local:
 +-------------------------------------------------------------+
 | SATURDAY 8 AUGUST                    18` Cloudy   H21 L13   |
 +---------------------------+---------------------------------+
-| TRAINS -> LST             | TODAY                           |
-|                           |                                 |
-|  07:16        ON TIME     |  09:00  Standup                 |
-|  07:31        EXP 07:36   |  13:00  Dentist                 |
-|  07:46        CANCELLED   |  16:30  Ellie swimming lesson   |
-|                           |  19:00  Book club               |
-|  rain 30% at 15:00        |                                 |
+| TRAINS -> LST             | TODAY                  +1 more  |
+|                           |  09:00  Standup                 |
+|  07:16        ON TIME     |  13:00  Dentist                 |
+|  07:31        EXP 07:36   |  16:30  Ellie swimming lesson   |
+|  07:46        CANCELLED   |  19:00  Book club               |
+|                           +---------------------------------+
+|  rain 30% at 15:00        | NEXT 7 DAYS            +1 day   |
+|                           |  SUN  07:00 Bin day             |
+|                           |  TUE  15:30 Swimming lesson     |
+|                           |  THU  Sam away for work         |
 +---------------------------+---------------------------------+
 | DINNER                    | CHORES                ! 2 over  |
 | Chicken traybake          | Bins - Ben   Hoover - Sam       |
@@ -97,13 +100,16 @@ weather line rather than print the same three numbers twice:
 +-------------------------------------------------------------+
 | SATURDAY 8 AUGUST                                           |
 +---------------------------+---------------------------------+
-| WEATHER                   | TODAY                           |
-|                           |                                 |
+| WEATHER                   | TODAY                  +1 more  |
 |  18`                      |  09:00  Standup                 |
 |                           |  13:00  Dentist                 |
 |  Cloudy                   |  16:30  Ellie swimming lesson   |
 |  H21  L13                 |  19:00  Book club               |
-|  Rain 30% at 15:00        |                                 |
+|  Rain 30% at 15:00        +---------------------------------+
+|  -----------------------  | NEXT 7 DAYS            +1 day   |
+|  TOMORROW       H23 L14   |  SUN  07:00 Bin day             |
+|  Heavy showers - rain 70% |  TUE  15:30 Swimming lesson     |
+|                           |  THU  Sam away for work         |
 +---------------------------+---------------------------------+
 | DINNER                    | CHORES                ! 2 over  |
 | Chicken traybake          | Bins - Ben   Hoover - Sam       |
@@ -118,6 +124,13 @@ and Huxley2 is the flakiest thing we depend on.
 The rain line states the negative in the day Daypart ("No rain expected today")
 and stays silent in the commute one. A blank space is ambiguous when the zone is
 about the weather and merely quiet when it is about trains.
+
+Both data columns run "now" over "next". Today's entries sit above the next
+seven days; the current temperature sits above tomorrow's. The lower half of
+each is terser on purpose — a line per day rather than a row per event, and a
+high, a low and a chance of rain rather than a second big number. What did not
+fit is counted in the heading, which is the one place in a fixed-height zone the
+content cannot push around.
 
 ### Wake schedule
 

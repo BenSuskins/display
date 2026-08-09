@@ -67,6 +67,13 @@ bun run scripts/sampleFrame.ts sample.bin        # 06:40, the commute view
 bun run scripts/sampleFrame.ts day.bin 14:00     # the day view
 ```
 
+**Two horizons, everywhere.** Each of the two data zones answers "now" above and
+"next" below: the calendar column carries today and then the next seven days, and
+the weather zone carries the current reading and then tomorrow. The second half
+of each is deliberately terser — the week ahead is a line per day rather than a
+row per event, and tomorrow is a high, a low and whether it rains. What did not
+fit is counted in the zone's heading, where the content cannot push it about.
+
 **Pure black and white, no greys.** The rasteriser thresholds at mid grey, so a
 page drawn only in `#000` and `#fff` renders identically in your browser and on
 the Panel. Introducing greys means guessing how they will threshold.

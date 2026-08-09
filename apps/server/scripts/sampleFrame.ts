@@ -24,6 +24,7 @@ if (!config.ok) throw new Error(config.failure.detail);
 // The sample day is in British Summer Time, so local is UTC+1 throughout and
 // `at` takes the UTC side of that.
 const at = (time: string) => new Date(`2026-08-10T${time}:00Z`);
+const on = (day: string, time: string) => new Date(`2026-08-${day}T${time}:00Z`);
 const now = new Date(at(localTime).getTime() - 60 * 60_000);
 
 const rasteriser = chromiumRasteriser();
@@ -46,6 +47,13 @@ const composer = frameComposer({
       maximumCelsius: 21,
       minimumCelsius: 13,
       nextRain: { probabilityPercent: 40, at: at("14:00") },
+      tomorrow: {
+        condition: "rain",
+        label: "Heavy showers",
+        maximumCelsius: 23,
+        minimumCelsius: 14,
+        rainProbabilityPercent: 70,
+      },
     },
   }),
   householdSource: fakeHouseholdSource({
@@ -68,6 +76,18 @@ const composer = frameComposer({
           allDay: false,
         },
         { title: "Book club", startsAt: at("18:00"), allDay: false },
+      ],
+      // A day with two things on, a day with one, and an all-day item further
+      // out — between them they exercise every shape the week zone can take.
+      upcoming: [
+        { title: "Bin day", startsAt: on("11", "06:00"), allDay: false },
+        { title: "Dentist follow up", startsAt: on("11", "16:00"), allDay: false },
+        {
+          title: "Ellie swimming lesson at Riverside",
+          startsAt: on("12", "15:30"),
+          allDay: false,
+        },
+        { title: "Sam away for work", startsAt: on("14", "00:00"), allDay: true },
       ],
     },
   }),

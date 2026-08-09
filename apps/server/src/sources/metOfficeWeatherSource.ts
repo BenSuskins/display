@@ -1,7 +1,9 @@
+import { dateDaysAfter, localDateIn } from "../domain/localTime";
 import { fail, succeed, type Result } from "../domain/result";
 import {
   meaningOfWeatherCode,
   RainWorthMentioningPercent,
+  type DayOutlook,
   type RainOutlook,
   type Weather,
 } from "../domain/weather";
@@ -58,16 +60,54 @@ const readHourlyPoint = (entry: unknown): HourlyPoint | undefined => {
   };
 };
 
-const sameLocalDay = (left: Date, right: Date, timeZone: string): boolean => {
-  const asDate = (moment: Date) =>
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(moment);
+/**
+ * The daily product's entry for one calendar date, if it carries one. Its
+ * `time` is midnight UTC, which is the same local date everywhere the Render
+ * Service is ever going to run.
+ */
+const dailyRecordFor = (
+  daily: unknown,
+  isoDate: string,
+  timeZone: string,
+): Record<string, unknown> | undefined => {
+  const found = timeSeriesOf(daily)?.find(
+    (entry) =>
+      isRecord(entry) &&
+      typeof entry["time"] === "string" &&
+      localDateIn(new Date(entry["time"]), timeZone) === isoDate,
+  );
 
-  return asDate(left) === asDate(right);
+  return isRecord(found) ? found : undefined;
+};
+
+/**
+ * A day's summary from the daily product. The high and low are what make the
+ * summary worth printing, so a record missing either is no summary at all —
+ * better an absent zone than "— H NaN".
+ */
+const readDayOutlook = (
+  record: Record<string, unknown> | undefined,
+): DayOutlook | undefined => {
+  if (record === undefined) return undefined;
+
+  const maximum = readNumber(record["dayMaxScreenTemperature"]);
+  const minimum = readNumber(record["nightMinScreenTemperature"]);
+  if (maximum === undefined || minimum === undefined) return undefined;
+
+  const meaning = meaningOfWeatherCode(
+    readNumber(record["daySignificantWeatherCode"]) ?? -1,
+  );
+  const rain = readNumber(record["dayProbabilityOfPrecipitation"]) ?? 0;
+
+  return {
+    condition: meaning.condition,
+    label: meaning.label,
+    maximumCelsius: Math.round(maximum),
+    minimumCelsius: Math.round(minimum),
+    ...(rain < RainWorthMentioningPercent
+      ? {}
+      : { rainProbabilityPercent: Math.round(rain) }),
+  };
 };
 
 export type ParseWeatherRequest = {
@@ -100,26 +140,24 @@ export const parseWeather = ({
     return fail({ kind: "malformed", detail: "hourly forecast was empty" });
   }
 
+  const todayDate = localDateIn(now, timeZone);
+  const isToday = (moment: Date) => localDateIn(moment, timeZone) === todayDate;
+
   const nextRain = points
     .filter(
       (point) =>
         point.at > now &&
-        sameLocalDay(point.at, now, timeZone) &&
+        isToday(point.at) &&
         point.rainProbabilityPercent >= RainWorthMentioningPercent,
     )
     .at(0);
 
-  const today = timeSeriesOf(daily)?.find(
-    (entry) =>
-      isRecord(entry) &&
-      typeof entry["time"] === "string" &&
-      sameLocalDay(new Date(entry["time"]), now, timeZone),
+  const dailyRecord = dailyRecordFor(daily, todayDate, timeZone) ?? {};
+  const tomorrow = readDayOutlook(
+    dailyRecordFor(daily, dateDaysAfter(todayDate, 1), timeZone),
   );
 
-  const dailyRecord = isRecord(today) ? today : {};
-  const restOfToday = points.filter((point) =>
-    sameLocalDay(point.at, now, timeZone),
-  );
+  const restOfToday = points.filter((point) => isToday(point.at));
   const temperatures = restOfToday.map((point) => point.temperatureCelsius);
 
   const meaning = meaningOfWeatherCode(current.weatherCode);
@@ -146,6 +184,7 @@ export const parseWeather = ({
             at: nextRain.at,
           } satisfies RainOutlook,
         }),
+    ...(tomorrow === undefined ? {} : { tomorrow }),
   });
 };
 

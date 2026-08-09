@@ -29,12 +29,24 @@ const hourly = geoJson([
   hour("2026-08-10T14:00Z", 19.8, 15, 70),
 ]);
 
+const day = (
+  time: string,
+  dayMaxScreenTemperature: number,
+  nightMinScreenTemperature: number,
+  extra: Record<string, unknown> = {},
+) => ({
+  time,
+  dayMaxScreenTemperature,
+  nightMinScreenTemperature,
+  ...extra,
+});
+
 const daily = geoJson([
-  {
-    time: "2026-08-10T00:00Z",
-    dayMaxScreenTemperature: 21.4,
-    nightMinScreenTemperature: 12.6,
-  },
+  day("2026-08-10T00:00Z", 21.4, 12.6),
+  day("2026-08-11T00:00Z", 23.2, 14.4, {
+    daySignificantWeatherCode: 15,
+    dayProbabilityOfPrecipitation: 70,
+  }),
 ]);
 
 const parseOrThrow = (
@@ -102,6 +114,59 @@ describe("parseWeather", () => {
       ]);
 
       expect(parseOrThrow({ hourly: tomorrow }).nextRain).toBeUndefined();
+    });
+  });
+
+  describe("tomorrow", () => {
+    test("summarises the next day from the daily product", () => {
+      expect(parseOrThrow().tomorrow).toEqual({
+        condition: "rain",
+        label: "Heavy rain",
+        maximumCelsius: 23,
+        minimumCelsius: 14,
+        rainProbabilityPercent: 70,
+      });
+    });
+
+    test("leaves out a chance of rain too low to be worth saying", () => {
+      const settled = geoJson([
+        day("2026-08-10T00:00Z", 21.4, 12.6),
+        day("2026-08-11T00:00Z", 23.2, 14.4, {
+          daySignificantWeatherCode: 1,
+          dayProbabilityOfPrecipitation: 10,
+        }),
+      ]);
+
+      expect(parseOrThrow({ daily: settled }).tomorrow).toEqual({
+        condition: "clear",
+        label: "Sunny",
+        maximumCelsius: 23,
+        minimumCelsius: 14,
+      });
+    });
+
+    test("is absent when the forecast does not reach that far", () => {
+      const todayOnly = geoJson([day("2026-08-10T00:00Z", 21.4, 12.6)]);
+
+      expect(parseOrThrow({ daily: todayOnly }).tomorrow).toBeUndefined();
+    });
+
+    test("is absent rather than half a summary when the temperatures are missing", () => {
+      const partial = geoJson([
+        day("2026-08-10T00:00Z", 21.4, 12.6),
+        { time: "2026-08-11T00:00Z", daySignificantWeatherCode: 1 },
+      ]);
+
+      expect(parseOrThrow({ daily: partial }).tomorrow).toBeUndefined();
+    });
+
+    test("does not mistake the day after tomorrow for tomorrow", () => {
+      const gap = geoJson([
+        day("2026-08-10T00:00Z", 21.4, 12.6),
+        day("2026-08-12T00:00Z", 25.0, 15.0),
+      ]);
+
+      expect(parseOrThrow({ daily: gap }).tomorrow).toBeUndefined();
     });
   });
 

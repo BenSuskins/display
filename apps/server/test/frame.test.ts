@@ -6,6 +6,7 @@ import { fakeRasteriser } from "../src/render/fakeRasteriser";
 import {
   fakeHouseholdSource,
   fakeWeatherSource,
+  SettledWeather,
 } from "../src/sources/fakeSources";
 import {
   departureAt,
@@ -52,6 +53,8 @@ const SevenThirtyOne = new Date("2026-08-10T06:31:00Z");
 const DuringTheCommute = new Date("2026-08-10T05:40:00Z");
 const AfterTheCommute = new Date("2026-08-10T13:00:00Z");
 
+const BinDay = new Date("2026-08-11T06:00:00Z");
+
 describe("dayparts", () => {
   test("shows the trains during the commute window", async () => {
     const html = await composerFor([SevenSixteen]).previewHtml({
@@ -71,6 +74,62 @@ describe("dayparts", () => {
     expect(html).toContain("Weather");
     expect(html).not.toContain("Trains");
     expect(html).not.toContain("07:16");
+  });
+
+  test("shows the week ahead in both, since it is not the zone that varies", async () => {
+    const composer = frameComposer({
+      departureSource: fakeDepartureSource(),
+      weatherSource: fakeWeatherSource(),
+      householdSource: fakeHouseholdSource({
+        household: {
+          upcoming: [
+            { title: "Bin day", startsAt: BinDay, allDay: false },
+          ],
+        },
+      }),
+      departures: configOrThrow().departures,
+      rasteriser: fakeRasteriser(),
+      daypart: configOrThrow().daypart,
+    });
+
+    for (const now of [DuringTheCommute, AfterTheCommute]) {
+      const html = await composer.previewHtml({ now });
+
+      expect(html).toContain("Next 7 days");
+      expect(html).toContain("Bin day");
+    }
+  });
+
+  test("gives tomorrow's weather to the weather zone, not the commute one", async () => {
+    // The commute Frame's weather is one line in the header, and tomorrow is
+    // not a question anyone is asking on the way out of the door.
+    const composer = frameComposer({
+      departureSource: fakeDepartureSource(),
+      weatherSource: fakeWeatherSource({
+        weather: {
+          ...SettledWeather,
+          tomorrow: {
+            condition: "rain",
+            label: "Heavy showers",
+            maximumCelsius: 23,
+            minimumCelsius: 14,
+            rainProbabilityPercent: 70,
+          },
+        },
+      }),
+      householdSource: fakeHouseholdSource(),
+      departures: configOrThrow().departures,
+      rasteriser: fakeRasteriser(),
+      daypart: configOrThrow().daypart,
+    });
+
+    const day = await composer.previewHtml({ now: AfterTheCommute });
+    expect(day).toContain("Tomorrow");
+    expect(day).toContain("Heavy showers");
+    expect(day).toContain("rain 70%");
+
+    const commute = await composer.previewHtml({ now: DuringTheCommute });
+    expect(commute).not.toContain("Heavy showers");
   });
 
   test("keeps the rest of the page where it was", async () => {
@@ -165,6 +224,33 @@ describe("frame identity", () => {
     expect(await etagOf(composer, new Date("2026-08-10T23:30:00Z"))).toBe(
       await etagOf(composer, new Date("2026-08-11T09:00:00Z")),
     );
+  });
+
+  test("changes when something is added to the week ahead", async () => {
+    // The zone renders from data, not from the clock, so it is covered by the
+    // stripped page the identity is hashed from — which is the rule that lets
+    // a zone be added without touching `renderFrameIdentityHtml`.
+    const config = configOrThrow();
+
+    const withWeek = (upcoming: Parameters<typeof fakeHouseholdSource>[0]) =>
+      frameComposer({
+        departureSource: fakeDepartureSource(),
+        weatherSource: fakeWeatherSource(),
+        householdSource: fakeHouseholdSource(upcoming),
+        departures: config.departures,
+        rasteriser: fakeRasteriser(),
+        daypart: config.daypart,
+      });
+
+    const empty = await etagOf(withWeek({}), AfterTheCommute);
+    const busy = await etagOf(
+      withWeek({
+        household: { upcoming: [{ title: "Bin day", startsAt: BinDay, allDay: false }] },
+      }),
+      AfterTheCommute,
+    );
+
+    expect(busy).not.toBe(empty);
   });
 
   test("changes when a departure is added", async () => {

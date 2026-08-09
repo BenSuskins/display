@@ -23,11 +23,20 @@ const parseOrThrow = (request: Parameters<typeof parseHousehold>[0]) => {
   return result.value;
 };
 
+// 13:30 local on Monday 10 August, in British Summer Time.
+const Now = new Date("2026-08-10T12:30:00Z");
+
 const request = (
   dashboard: unknown,
   calendar: unknown = { events: [] },
   userList: unknown = users,
-) => ({ dashboard, calendar, users: userList });
+) => ({
+  dashboard,
+  calendars: [calendar],
+  users: userList,
+  now: Now,
+  timeZone: "Europe/London",
+});
 
 describe("parseHousehold", () => {
   test("reads chores due today", () => {
@@ -137,6 +146,82 @@ describe("parseHousehold", () => {
 
       expect(entries.map((entry) => entry.title)).toEqual(["Fine"]);
     });
+
+    test("keeps a late event in today until the local day is actually over", () => {
+      // 22:30 local is still the 10th, though it is the 11th in UTC.
+      const entries = eventsOf([
+        { Title: "Late film", StartTime: "2026-08-10T21:30:00Z" },
+      ]);
+
+      expect(entries.map((entry) => entry.title)).toEqual(["Late film"]);
+    });
+  });
+
+  describe("the week ahead", () => {
+    const upcomingOf = (events: readonly unknown[]) =>
+      parseOrThrow(request({}, { events })).upcoming;
+
+    test("holds the days after today, and not today itself", () => {
+      const titles = upcomingOf([
+        { Title: "Dentist", StartTime: "2026-08-10T13:00:00Z" },
+        { Title: "Bin day", StartTime: "2026-08-11T06:00:00Z" },
+      ]).map((entry) => entry.title);
+
+      expect(titles).toEqual(["Bin day"]);
+    });
+
+    test("reaches seven days out and no further", () => {
+      const titles = upcomingOf([
+        { Title: "Seventh day", StartTime: "2026-08-17T09:00:00Z" },
+        { Title: "Eighth day", StartTime: "2026-08-18T09:00:00Z" },
+      ]).map((entry) => entry.title);
+
+      expect(titles).toEqual(["Seventh day"]);
+    });
+
+    test("runs day by day, with each day's all-day items first", () => {
+      // The rule that lifts all-day items to the top belongs inside a day.
+      // Applied across the week it would hoist Friday above tomorrow morning.
+      const titles = upcomingOf([
+        { Title: "Book club", StartTime: "2026-08-12T18:00:00Z" },
+        { Title: "Sam away", StartTime: "2026-08-14T00:00:00Z", AllDay: true },
+        { Title: "Bin day", StartTime: "2026-08-11T06:00:00Z" },
+        { Title: "Half term", StartTime: "2026-08-12T00:00:00Z", AllDay: true },
+      ]).map((entry) => entry.title);
+
+      expect(titles).toEqual(["Bin day", "Half term", "Book club", "Sam away"]);
+    });
+
+    test("counts an event appearing in two calendars once", () => {
+      // The two week windows the source fetches do not overlap, but nothing
+      // about the parse should depend on that.
+      const event = { Title: "Bin day", StartTime: "2026-08-11T06:00:00Z" };
+      const parsed = parseOrThrow({
+        dashboard: {},
+        calendars: [{ events: [event] }, { events: [event] }],
+        users,
+        now: Now,
+        timeZone: "Europe/London",
+      });
+
+      expect(parsed.upcoming.map((entry) => entry.title)).toEqual(["Bin day"]);
+    });
+
+    test("takes today and the week from whichever calendar carries them", () => {
+      const parsed = parseOrThrow({
+        dashboard: {},
+        calendars: [
+          { events: [{ Title: "Dentist", StartTime: "2026-08-10T13:00:00Z" }] },
+          { events: [{ Title: "Book club", StartTime: "2026-08-13T18:00:00Z" }] },
+        ],
+        users,
+        now: Now,
+        timeZone: "Europe/London",
+      });
+
+      expect(parsed.today.map((entry) => entry.title)).toEqual(["Dentist"]);
+      expect(parsed.upcoming.map((entry) => entry.title)).toEqual(["Book club"]);
+    });
   });
 
   describe("awkward payloads", () => {
@@ -145,6 +230,7 @@ describe("parseHousehold", () => {
         choresDueToday: [],
         overdueChoreCount: 0,
         today: [],
+        upcoming: [],
       });
     });
 

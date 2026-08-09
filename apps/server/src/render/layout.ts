@@ -1,6 +1,11 @@
 import type { Daypart } from "../domain/daypart";
 import type { Departure } from "../domain/departure";
-import type { CalendarEntry, Household } from "../domain/household";
+import {
+  UpcomingDays,
+  type CalendarEntry,
+  type Household,
+} from "../domain/household";
+import { localDateIn } from "../domain/localTime";
 import type { Result } from "../domain/result";
 import type { Weather } from "../domain/weather";
 import type { SourceFailure } from "../sources/departureSource";
@@ -40,6 +45,11 @@ const timeIn = (moment: Date, timeZone: string): string =>
     minute: "2-digit",
     hour12: false,
   }).format(moment);
+
+const dayIn = (moment: Date, timeZone: string): string =>
+  new Intl.DateTimeFormat("en-GB", { timeZone, weekday: "short" })
+    .format(moment)
+    .toUpperCase();
 
 const dateIn = (moment: Date, timeZone: string): string =>
   new Intl.DateTimeFormat("en-GB", {
@@ -138,6 +148,42 @@ const weatherOutlook = (view: FrameView): string => {
       <p class="condition">${escapeHtml(label)}</p>
       <p class="range">H${maximumCelsius} &nbsp;L${minimumCelsius}</p>
       ${rainOutlookLine(view)}
+      ${tomorrowOutlook(view)}
+    </div>`;
+};
+
+/**
+ * Tomorrow, in one line under a rule.
+ *
+ * Deliberately not a second copy of the block above it: today is read as a
+ * number you can feel on your skin, tomorrow is read as a decision about what
+ * to put in a bag tonight. The high, the low and whether it rains answer that,
+ * and nothing else earns the pixels on a Panel this size.
+ */
+const tomorrowOutlook = (view: FrameView): string => {
+  if (!view.weather.ok) return "";
+
+  const { tomorrow } = view.weather.value;
+  if (tomorrow === undefined) {
+    return `
+      <div class="tomorrow">
+        <h3><span>Tomorrow</span></h3>
+        <p class="unavailable">Not forecast yet</p>
+      </div>`;
+  }
+
+  const { label, maximumCelsius, minimumCelsius, rainProbabilityPercent } =
+    tomorrow;
+
+  return `
+    <div class="tomorrow">
+      <h3><span>Tomorrow</span>
+        <span class="figures">H${maximumCelsius} L${minimumCelsius}</span></h3>
+      <p class="summary">${escapeHtml(label)}${
+        rainProbabilityPercent === undefined
+          ? ""
+          : ` &middot; rain ${rainProbabilityPercent}%`
+      }</p>
     </div>`;
 };
 
@@ -154,6 +200,31 @@ const rainOutlookLine = (view: FrameView): string =>
 const entryTime = (entry: CalendarEntry, timeZone: string): string =>
   entry.allDay ? "all day" : timeIn(entry.startsAt, timeZone);
 
+/**
+ * What did not fit, in the heading rather than in a row of its own.
+ *
+ * The same trick the chore band plays with its overdue count, and for the same
+ * reason: the heading's position cannot be pushed about by the content, so a
+ * busy day cannot cost you the very line that says the day is busy.
+ */
+const withOverflow = (title: string, hidden: number, label: string): string =>
+  hidden <= 0
+    ? `<h2>${title}</h2>`
+    : `<h2 class="withCount"><span>${title}</span>
+         <span class="more">+${hidden} ${label}</span></h2>`;
+
+/** As many rows as the zone holds without clipping the last of them. */
+const AgendaRowsShown = 4;
+
+const agendaHeading = (view: FrameView): string =>
+  withOverflow(
+    "Today",
+    view.household.ok
+      ? view.household.value.today.length - AgendaRowsShown
+      : 0,
+    "more",
+  );
+
 const agendaRows = (view: FrameView): string => {
   if (!view.household.ok) return missing("Calendar", view.household.failure);
 
@@ -163,7 +234,7 @@ const agendaRows = (view: FrameView): string => {
   }
 
   return today
-    .slice(0, 7)
+    .slice(0, AgendaRowsShown)
     .map(
       (entry) => `
         <div class="entry">
@@ -171,6 +242,77 @@ const agendaRows = (view: FrameView): string => {
           <span class="what">${escapeHtml(entry.title)}</span>
         </div>`,
     )
+    .join("");
+};
+
+/** As many days of the week ahead as the zone can hold without clipping. */
+const UpcomingDaysShown = 3;
+
+/** The week ahead grouped into days, nearest first. */
+const upcomingDays = (
+  view: FrameView,
+): readonly (readonly CalendarEntry[])[] => {
+  if (!view.household.ok) return [];
+
+  const byDay = new Map<string, readonly CalendarEntry[]>();
+  for (const entry of view.household.value.upcoming) {
+    const day = localDateIn(entry.startsAt, view.timeZone);
+    byDay.set(day, [...(byDay.get(day) ?? []), entry]);
+  }
+
+  // The entries arrive in calendar order and a Map keeps insertion order, so
+  // this is the days in order too.
+  return [...byDay.values()];
+};
+
+const upcomingHeading = (view: FrameView): string => {
+  const hidden = upcomingDays(view).length - UpcomingDaysShown;
+
+  return withOverflow(
+    `Next ${UpcomingDays} days`,
+    hidden,
+    hidden === 1 ? "day" : "days",
+  );
+};
+
+const upcomingLabel = (entry: CalendarEntry, timeZone: string): string =>
+  entry.allDay
+    ? entry.title
+    : `${timeIn(entry.startsAt, timeZone)} ${entry.title}`;
+
+/**
+ * The week ahead, a line to a day.
+ *
+ * A row per event is how today is shown, and it is the wrong shape here: seven
+ * days of a household calendar do not fit as rows, and the question this zone
+ * answers is not "what is at 16:30 on Thursday" but "which evenings are already
+ * spoken for". Days with nothing on are left out rather than printed empty —
+ * their absence is the answer.
+ */
+const upcomingRows = (view: FrameView): string => {
+  if (!view.household.ok) return missing("Week", view.household.failure);
+
+  const days = upcomingDays(view);
+  if (days.length === 0) {
+    return `<p class="unavailable">Nothing in the next ${UpcomingDays} days</p>`;
+  }
+
+  return days
+    .slice(0, UpcomingDaysShown)
+    .flatMap((entries) => {
+      const first = entries[0];
+      if (first === undefined) return [];
+
+      return [
+        `
+        <div class="entry">
+          <span class="on">${dayIn(first.startsAt, view.timeZone)}</span>
+          <span class="what">${escapeHtml(
+            entries.map((entry) => upcomingLabel(entry, view.timeZone)).join(" · "),
+          )}</span>
+        </div>`,
+      ];
+    })
     .join("");
 };
 
@@ -240,16 +382,8 @@ const daypartZone = (view: FrameView): string =>
     : `<h2>Weather</h2>
        ${weatherOutlook(view)}`;
 
-const startOfLocalDay = (moment: Date, timeZone: string): Date => {
-  const isoDate = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(moment);
-
-  return new Date(`${isoDate}T00:00:00Z`);
-};
+const startOfLocalDay = (moment: Date, timeZone: string): Date =>
+  new Date(`${localDateIn(moment, timeZone)}T00:00:00Z`);
 
 /**
  * The same page with the one thing that ticks on its own held still: the
@@ -284,23 +418,26 @@ export const renderFrameHtml = (view: FrameView): string => `
     background: #fff; color: #000;
     font-family: Helvetica, Arial, sans-serif;
     display: grid;
-    grid-template-rows: 64px 1fr 136px;
+    /* Both bands lost a few pixels to the two new zones. The header holds one
+       line of text and the bottom band two rows of chore pills; neither had
+       room to give beyond this. */
+    grid-template-rows: 58px 1fr 122px;
     -webkit-font-smoothing: none;
   }
   header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 20px; border-bottom: 3px solid #000;
-    font-size: 26px; font-weight: bold; letter-spacing: 1px;
+    font-size: 24px; font-weight: bold; letter-spacing: 1px;
   }
   header .muted { font-weight: normal; font-size: 18px; }
   header .rendered { font-weight: normal; font-size: 15px; }
   main { display: grid; grid-template-columns: 340px 1fr; min-height: 0; }
-  section { padding: 14px 20px; min-height: 0; overflow: hidden; }
+  section { padding: 12px 20px; min-height: 0; overflow: hidden; }
   section + section { border-left: 3px solid #000; }
   h2 {
-    margin: 0 0 10px; font-size: 17px; letter-spacing: 2px;
+    margin: 0 0 8px; font-size: 17px; letter-spacing: 2px;
     text-transform: uppercase; border-bottom: 1px solid #000;
-    padding-bottom: 5px;
+    padding-bottom: 4px;
   }
   h2.withCount {
     display: flex; justify-content: space-between; align-items: center;
@@ -320,26 +457,51 @@ export const renderFrameHtml = (view: FrameView): string => `
      longest label the Met Office sends, and it does not fit next to two digits
      at this size in a 340px zone. On its own line it has the full width. */
   .degrees {
-    margin: 6px 0 0; font-size: 92px; font-weight: bold; line-height: 1;
+    margin: 2px 0 0; font-size: 74px; font-weight: bold; line-height: 1;
     font-variant-numeric: tabular-nums;
   }
   .condition {
-    margin: 12px 0 0; font-size: 30px; font-weight: bold;
+    margin: 8px 0 0; font-size: 27px; font-weight: bold;
     overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   }
   .range {
-    margin: 14px 0 0; font-size: 26px; font-weight: bold;
+    margin: 10px 0 0; font-size: 24px; font-weight: bold;
     font-variant-numeric: tabular-nums;
   }
-  .outlook .rain { margin-top: 16px; font-size: 21px; }
-  .entry { display: flex; gap: 14px; align-items: baseline; padding: 5px 0; }
+  .outlook .rain { margin-top: 10px; font-size: 19px; }
+  .tomorrow { margin-top: 12px; border-top: 1px solid #000; padding-top: 6px; }
+  .tomorrow h3 {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 10px; margin: 0; font-size: 15px; letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .tomorrow .figures {
+    letter-spacing: 0; font-size: 19px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tomorrow .summary {
+    margin: 4px 0 0; font-size: 22px; font-weight: bold;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  /* The right column holds two zones now, so it is a grid of its own: today
+     takes whatever the week ahead does not, and both clip rather than push the
+     other off the Panel. */
+  .agenda { display: grid; grid-template-rows: 1fr auto; padding: 0; }
+  .agenda > div { padding: 10px 20px; min-height: 0; overflow: hidden; }
+  /* Tighter than the zone above it on purpose: today is read first and from
+     further away, and the week ahead may only have what is left. */
+  .week { border-top: 3px solid #000; padding-top: 8px; }
+  .week h2 { margin-bottom: 5px; font-size: 15px; padding-bottom: 3px; }
+  .week .what, .week .on { font-size: 18px; }
+  .entry { display: flex; gap: 12px; align-items: baseline; padding: 3px 0; }
   .entry + .entry { border-top: 1px dotted #000; }
-  .at {
-    font-size: 21px; font-weight: bold; min-width: 86px;
+  .at, .on {
+    font-size: 19px; font-weight: bold; min-width: 82px;
     font-variant-numeric: tabular-nums;
   }
+  .on { min-width: 50px; letter-spacing: 1px; }
   .what {
-    font-size: 21px; flex: 1;
+    font-size: 19px; flex: 1;
     /* A flex child will not shrink below its content without this, so
        overflow never engages and long titles run off the panel. */
     min-width: 0;
@@ -355,6 +517,12 @@ export const renderFrameHtml = (view: FrameView): string => `
   .overdue {
     font-size: 15px; font-weight: bold; letter-spacing: 0;
     background: #000; color: #fff; padding: 3px 9px;
+    white-space: nowrap; flex: none;
+  }
+  /* Quieter than the overdue count beside it in the same slot: a truncated
+     list is a footnote, an overdue chore is a demand. */
+  .more {
+    font-size: 14px; font-weight: normal; letter-spacing: 0;
     white-space: nowrap; flex: none;
   }
   .unavailable { margin: 0; font-size: 17px; font-style: italic; }
@@ -374,9 +542,15 @@ export const renderFrameHtml = (view: FrameView): string => `
   <section>
     ${daypartZone(view)}
   </section>
-  <section>
-    <h2>Today</h2>
-    ${agendaRows(view)}
+  <section class="agenda">
+    <div>
+      ${agendaHeading(view)}
+      ${agendaRows(view)}
+    </div>
+    <div class="week">
+      ${upcomingHeading(view)}
+      ${upcomingRows(view)}
+    </div>
   </section>
 </main>
 

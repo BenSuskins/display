@@ -1,9 +1,12 @@
 import {
+  inCalendarOrder,
   inDayOrder,
+  UpcomingDays,
   type CalendarEntry,
   type Chore,
   type Household,
 } from "../domain/household";
+import { dateDaysAfter, localDateIn } from "../domain/localTime";
 import { fail, succeed, type Result } from "../domain/result";
 import type { SourceFailure } from "./departureSource";
 import type { HouseholdSource } from "./householdSource";
@@ -67,16 +70,46 @@ const namesById = (users: unknown): ReadonlyMap<string, string> =>
     }),
   );
 
+/**
+ * Every readable event across however many calendar payloads were fetched.
+ *
+ * Keyed by start and title, so an event that turns up in two payloads is still
+ * one event. The caller fetches whole weeks rather than an exact window, and
+ * this is what makes that free to do.
+ */
+const eventsIn = (calendars: readonly unknown[]): readonly CalendarEntry[] => {
+  const byIdentity = new Map<string, CalendarEntry>();
+
+  for (const calendar of calendars) {
+    if (!isRecord(calendar)) continue;
+
+    for (const candidate of readArray(calendar["events"])) {
+      const event = readEvent(candidate);
+      if (event === undefined) continue;
+
+      byIdentity.set(`${event.startsAt.getTime()} ${event.title}`, event);
+    }
+  }
+
+  return [...byIdentity.values()];
+};
+
 export type ParseHouseholdRequest = {
   readonly dashboard: unknown;
-  readonly calendar: unknown;
+  /** One payload per calendar range fetched. Between them they must cover
+   * today and the next `UpcomingDays`; anything further out is ignored. */
+  readonly calendars: readonly unknown[];
   readonly users: unknown;
+  readonly now: Date;
+  readonly timeZone: string;
 };
 
 export const parseHousehold = ({
   dashboard,
-  calendar,
+  calendars,
   users,
+  now,
+  timeZone,
 }: ParseHouseholdRequest): Result<Household, SourceFailure> => {
   if (!isRecord(dashboard)) {
     return fail({ kind: "malformed", detail: "dashboard was not an object" });
@@ -94,19 +127,25 @@ export const parseHousehold = ({
 
   const dinner = dinnerFrom(readArray(dashboard["today_meals"]));
 
-  const today = isRecord(calendar)
-    ? inDayOrder(
-        readArray(calendar["events"]).flatMap((candidate) => {
-          const event = readEvent(candidate);
-          return event === undefined ? [] : [event];
-        }),
-      )
-    : [];
+  const todayDate = localDateIn(now, timeZone);
+  const lastUpcomingDate = dateDaysAfter(todayDate, UpcomingDays);
+
+  // Split by the calendar date the event starts on rather than by elapsed
+  // hours: an event at 23:00 tonight belongs to today even at 23:30, and one at
+  // 08:00 tomorrow is not "in six hours", it is tomorrow.
+  const events = eventsIn(calendars);
+  const dateOf = (entry: CalendarEntry) => localDateIn(entry.startsAt, timeZone);
+
+  const upcoming = events.filter((entry) => {
+    const date = dateOf(entry);
+    return date > todayDate && date <= lastUpcomingDate;
+  });
 
   return succeed({
     choresDueToday,
     overdueChoreCount: readArray(dashboard["chores_overdue_list"]).length,
-    today,
+    today: inDayOrder(events.filter((entry) => dateOf(entry) === todayDate)),
+    upcoming: inCalendarOrder(upcoming, timeZone),
     ...(dinner === undefined ? {} : { dinner }),
   });
 };
@@ -117,14 +156,6 @@ export type FamilyHubConfig = {
   readonly timeZone: string;
   readonly fetch?: typeof globalThis.fetch;
 };
-
-const localDate = (moment: Date, timeZone: string): string =>
-  new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(moment);
 
 export const familyHubHouseholdSource = ({
   baseUrl,
@@ -148,17 +179,31 @@ export const familyHubHouseholdSource = ({
 
   return {
     household: async (now) => {
+      const today = localDateIn(now, timeZone);
+
       try {
-        // Three calls, because no single endpoint covers it: the dashboard has
-        // chores and meals but no events, the calendar has events but no
-        // overdue chores, and chores name their assignee only by id.
-        const [dashboard, calendar, users] = await Promise.all([
+        // No single endpoint covers this: the dashboard has chores and meals
+        // but no events, the calendar has events but no overdue chores, and
+        // chores name their assignee only by id.
+        //
+        // Two calendar calls, because the week view is anchored to the Monday
+        // of whichever week the date falls in. This week alone runs out on a
+        // Monday — it would reach only six days ahead — so the smallest range
+        // that always covers today plus seven days is this week and the next.
+        const [dashboard, thisWeek, nextWeek, users] = await Promise.all([
           get("/api/dashboard"),
-          get(`/api/calendar?view=day&date=${localDate(now, timeZone)}`),
+          get(`/api/calendar?view=week&date=${today}`),
+          get(`/api/calendar?view=week&date=${dateDaysAfter(today, UpcomingDays)}`),
           get("/api/users"),
         ]);
 
-        return parseHousehold({ dashboard, calendar, users });
+        return parseHousehold({
+          dashboard,
+          calendars: [thisWeek, nextWeek],
+          users,
+          now,
+          timeZone,
+        });
       } catch (cause) {
         return fail({
           kind: "unreachable",

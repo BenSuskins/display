@@ -89,7 +89,10 @@ the trains have gone and that zone is worth more to the weather. See
 | Daypart | When | Left column shows |
 | --- | --- | --- |
 | `commute` | `COMMUTE_STARTS_AT`–`COMMUTE_ENDS_AT`, default 06:00–09:00 | Departures |
-| `day` | Everything else | Weather |
+| `day` | Everything else | Weather, now and tomorrow |
+
+Every other zone is the same in both, the calendar column included: today's
+entries above, the next seven days below.
 
 The window is half open — a Frame rendered at exactly the end minute is already
 `day`, or 09:00 would show a board whose first train has invariably gone.
@@ -155,5 +158,5 @@ nothing:
 | --- | --- | --- |
 | Huxley2 / Darwin | Live departure board | Departures zone says so; the rest of the Frame renders. The public Huxley2 instance has no uptime guarantee |
 | Met Office DataHub | Weather. Free tier is 360 calls/day; this uses ~90 | Weather zone says so. Unset token is treated the same as a dead upstream |
-| Family Hub | Calendar, dinner, chores | Household zones say so. Both `HUB_ACCESS_TOKEN` and `HUB_BASE_URL` must be set or the zones report themselves unconfigured |
+| Family Hub | Calendar, dinner, chores. Four calls: the dashboard, two Monday-anchored calendar weeks, and the user list | Household zones say so. Both `HUB_ACCESS_TOKEN` and `HUB_BASE_URL` must be set or the zones report themselves unconfigured |
 | The Render Service itself | Everything | The device stamps the Offline Marker and leaves the last Frame up |

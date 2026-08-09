@@ -13,6 +13,20 @@ export type RainOutlook = {
   readonly at: Date;
 };
 
+/**
+ * A whole day summarised, with no current temperature — nobody standing at a
+ * fridge today needs tomorrow's reading at 14:00, they need to know whether to
+ * hang the washing out and what coat the children will need.
+ */
+export type DayOutlook = {
+  readonly condition: WeatherCondition;
+  readonly label: string;
+  readonly maximumCelsius: number;
+  readonly minimumCelsius: number;
+  /** Absent unless the day's chance of rain is worth mentioning at all. */
+  readonly rainProbabilityPercent?: number;
+};
+
 export type Weather = {
   readonly temperatureCelsius: number;
   readonly condition: WeatherCondition;
@@ -21,6 +35,8 @@ export type Weather = {
   readonly minimumCelsius: number;
   /** The next hour today worth carrying a coat for, if there is one. */
   readonly nextRain?: RainOutlook;
+  /** Absent when the daily product does not reach as far as tomorrow. */
+  readonly tomorrow?: DayOutlook;
 };
 
 type CodeMeaning = {
