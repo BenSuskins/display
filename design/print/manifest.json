@@ -1,0 +1,139 @@
+{
+  "units": "mm",
+  "case_mm": [
+    120,
+    74,
+    30
+  ],
+  "status": "Fit prototype; no physical validation performed",
+  "material": "Unfilled PA12 nylon, MJF preferred",
+  "finish": "Vapour smoothing, subject to supplier review",
+  "checks_passed": 67,
+  "files": [
+    {
+      "path": "ASSEMBLY.md",
+      "bytes": 5561,
+      "sha256": "618a5db2b587d5d6a266693650b855b88574f7a17f0a887ebb2d942f846fe8ac"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2739,
+      "sha256": "1abbcc56e2aadff9c3847773f59e7306ff782f69399712b2c62fe03814811ac9"
+    },
+    {
+      "path": "cad/README.md",
+      "bytes": 1195,
+      "sha256": "c2b36676d6e124844df1c5112ae344f4dd8881da046e02f600f4abbb664661b5"
+    },
+    {
+      "path": "cad/case.py",
+      "bytes": 12292,
+      "sha256": "180da9590cbd64c0a69000e7eecc7c2053ff4e50d48037c0a9c575dc784f20e3"
+    },
+    {
+      "path": "cad/package.py",
+      "bytes": 2086,
+      "sha256": "f25a5e419f5e70ea78ed02d7cc833c4de6b7d92f24b25ffee3f2f600a55507be"
+    },
+    {
+      "path": "cad/requirements.txt",
+      "bytes": 47,
+      "sha256": "bcbdaeaca8d6f140d30432b68ee493c6f746bfad1ce165fbbe6b9fe394f13463"
+    },
+    {
+      "path": "cad/update_preview.py",
+      "bytes": 5611,
+      "sha256": "58ea407fd086596ee5a8e5df0828370a4862ca78d63d79e61cfb6c29f5fccc22"
+    },
+    {
+      "path": "cad/validate.py",
+      "bytes": 6921,
+      "sha256": "0063328c9aa402f0346119865495263df0595077ded60d530a0ef38f5830fa09"
+    },
+    {
+      "path": "case-mockup.html",
+      "bytes": 409744,
+      "sha256": "fe7a7d4df3a1b4f773f1b2b7a23ea2161e9a967efc739346a72dda6486223b38"
+    },
+    {
+      "path": "print/PRINT-REQUEST.md",
+      "bytes": 872,
+      "sha256": "fab27abbce123296baef6c8cd53b4f5786f5b3605eccd570e871e571958c56f4"
+    },
+    {
+      "path": "print/case-assembly.step",
+      "bytes": 1559239,
+      "sha256": "ccc3966c69ec245a74a93eb7d3611eb81ca4fc2ae041b6ca8b637911c3014fc9"
+    },
+    {
+      "path": "print/case-exploded.png",
+      "bytes": 238192,
+      "sha256": "6428eed21ccbfa1ef09da05f886709ec566a229e1d7fdcfadfdf8f97e69a1634"
+    },
+    {
+      "path": "print/case-preview.png",
+      "bytes": 170819,
+      "sha256": "4bbd74e90d07bfdb3ebb8ccbd6f6fc280daa5ef4cc40379f8d1c78a94ce85048"
+    },
+    {
+      "path": "print/clip-coupon-cover.step",
+      "bytes": 124207,
+      "sha256": "4fb3878d2a7969eb4d1fdad0cf0e66873504b490b1e0ca8e8d2df8125ec56792"
+    },
+    {
+      "path": "print/clip-coupon-cover.stl",
+      "bytes": 9884,
+      "sha256": "9b7186b4ae88c560583cb40e0eecd75685715207c2f1e7c45268e9b6bc7a6825"
+    },
+    {
+      "path": "print/clip-coupon-frame.step",
+      "bytes": 42664,
+      "sha256": "23652400e3d4bcc50100d3ce6a3c4d6840d9054f41da038fb1f34db75646b453"
+    },
+    {
+      "path": "print/clip-coupon-frame.stl",
+      "bytes": 2284,
+      "sha256": "82b525bce554d5fe5faca53ac0569457d2759c913ea176642ef44cc398e559dc"
+    },
+    {
+      "path": "print/dimensions.json",
+      "bytes": 586,
+      "sha256": "3a6e05e50c465a49a5686b881d02545c99dbcb4fda594c858ef60fe0c89725db"
+    },
+    {
+      "path": "print/front-frame.step",
+      "bytes": 379248,
+      "sha256": "ffff9c7892e0a213e06d8f627b4d9a774d676b8b5adffee594727c970908aed4"
+    },
+    {
+      "path": "print/front-frame.stl",
+      "bytes": 83284,
+      "sha256": "6335719f55ef1ea039d9df4e362296586e217c10ec5e60bcc172fcdb2a47de0e"
+    },
+    {
+      "path": "print/internal-carrier.step",
+      "bytes": 703192,
+      "sha256": "2d2925871d3743be6c06ebacc84e12be2de6e5f5e25c25cdb39cc3e204154e94"
+    },
+    {
+      "path": "print/internal-carrier.stl",
+      "bytes": 167584,
+      "sha256": "5f5df52536b71665294eb744d0be749b95948da8bbf149c2b5a4535928c6bf94"
+    },
+    {
+      "path": "print/rear-cover.step",
+      "bytes": 432521,
+      "sha256": "641c92b7dcab80e40c566b853aa9dce4a6e7ced1da68b26da642f92c6eee2d98"
+    },
+    {
+      "path": "print/rear-cover.stl",
+      "bytes": 251084,
+      "sha256": "6f25ea98b6fed4988c50c13fc7312dc848c78048e0c1e9e24a070e0f52a8163f"
+    },
+    {
+      "path": "print/validation.json",
+      "bytes": 12977,
+      "sha256": "8d928cb587df2c6925a40245e391ec1bdf6709f23920f68b46a923be91ec0dcd"
+    }
+  ]
+}
