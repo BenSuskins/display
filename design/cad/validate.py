@@ -9,7 +9,13 @@ from pathlib import Path
 
 import cadquery as cad
 import trimesh
-from case import DEFAULTS, block, build_coupons, build_parts, hardware_envelopes
+from case import (
+    DEFAULTS,
+    block,
+    build_coupons,
+    build_parts,
+    hardware_envelopes,
+)
 
 
 def dimensions(shape):
@@ -69,6 +75,50 @@ def validate(output):
             f"{name}: print bed",
             abs(mesh.bounds[0, 2]) < 1e-5,
             {"minimum_z_mm": float(mesh.bounds[0, 2])},
+        )
+    combined = trimesh.load_mesh(output / "all-parts.stl")
+    components = sorted(combined.split(), key=lambda mesh: mesh.volume)
+    originals = sorted(
+        [trimesh.load_mesh(output / f"{name}.stl") for name in all_parts],
+        key=lambda mesh: mesh.volume,
+    )
+    record(
+        "combined STL: five separate printable parts",
+        len(components) == 5
+        and combined.is_watertight
+        and combined.is_winding_consistent
+        and all(abs(mesh.bounds[0, 2]) < 1e-5 for mesh in components),
+        {
+            "connected_parts": len(components),
+            "watertight": combined.is_watertight,
+            "bounds_mm": combined.extents.round(4).tolist(),
+        },
+    )
+    record(
+        "combined STL: original geometry",
+        len(components) == len(originals)
+        and all(
+            abs(component.volume - original.volume) / original.volume < 1e-5
+            and max(abs(component.extents - original.extents)) < 1e-4
+            and len(component.faces) == len(original.faces)
+            for component, original in zip(components, originals)
+        ),
+        {"parts_compared": len(components)},
+    )
+    for (first_number, first), (second_number, second) in combinations(
+        enumerate(components, start=1), 2
+    ):
+        first_bounds, second_bounds = first.bounds, second.bounds
+        separation = max(
+            second_bounds[0, 0] - first_bounds[1, 0],
+            first_bounds[0, 0] - second_bounds[1, 0],
+            second_bounds[0, 1] - first_bounds[1, 1],
+            first_bounds[0, 1] - second_bounds[1, 1],
+        )
+        record(
+            f"combined STL: part {first_number} / part {second_number} gap",
+            separation >= 10 - 1e-5,
+            {"gap_mm": round(separation, 4)},
         )
     for (first_name, first), (second_name, second) in combinations(parts.items(), 2):
         volume = collision_volume(first, second)

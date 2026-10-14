@@ -329,6 +329,29 @@ def print_position(shape: cad.Shape, name: str) -> cad.Shape:
     return positioned.translate((-bounds.xmin, -bounds.ymin, -bounds.zmin))
 
 
+def build_print_layout(parts, coupons) -> dict[str, cad.Shape]:
+    shapes = {**parts, **coupons}
+    layout = {}
+    horizontal = vertical = row_height = 0.0
+    for name in [
+        "front-frame",
+        "rear-cover",
+        "internal-carrier",
+        "clip-coupon-frame",
+        "clip-coupon-cover",
+    ]:
+        positioned = print_position(shapes[name], name)
+        bounds = positioned.BoundingBox()
+        if horizontal and horizontal + bounds.xlen > 250.01:
+            horizontal = 0.0
+            vertical += row_height + 10
+            row_height = 0.0
+        layout[name] = positioned.translate((horizontal, vertical, 0))
+        horizontal += bounds.xlen + 10
+        row_height = max(row_height, bounds.ylen)
+    return layout
+
+
 def export_files(output: Path, parts, dimensions=DEFAULTS) -> None:
     output.mkdir(parents=True, exist_ok=True)
     coupons = build_coupons(parts, dimensions)
@@ -340,6 +363,12 @@ def export_files(output: Path, parts, dimensions=DEFAULTS) -> None:
             tolerance=0.025,
             angularTolerance=0.12,
         )
+    cad.exporters.export(
+        cad.Compound.makeCompound(list(build_print_layout(parts, coupons).values())),
+        str(output / "all-parts.stl"),
+        tolerance=0.025,
+        angularTolerance=0.12,
+    )
     assembly = cad.Assembly(name="household-display-case")
     colors = {
         "front-frame": (0.81, 0.86, 0.84),

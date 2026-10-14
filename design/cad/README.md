@@ -19,7 +19,9 @@ python design/cad/package.py
 
 The generator exports STEP files in assembly coordinates. It exports each
 STL in a separate print orientation with its lowest point at Z=0. The
-validator reads the exported files and writes `design/print/validation.json`.
+`all-parts.stl` file contains all five parts in those same orientations,
+with a 10 mm gap between parts. Its print layout uses two rows.
+The validator reads the exported files and writes `design/print/validation.json`.
 The preview script embeds the exported STEP meshes in the standalone HTML.
 It does not need a CDN or a web server.
 

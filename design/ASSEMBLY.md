@@ -11,8 +11,11 @@ allows a small trial order.
 
 ## Files for the print service
 
-Upload these files separately. Set the units to **millimetres**. Order one
-copy of each part:
+Upload `print/all-parts.stl` for all three case parts and both clip coupons
+in one file. The five parts remain separate, with a 10 mm gap on the print
+bed. Set the units to **millimetres**. Keep the scale at **100%**.
+
+Use these separate files if the service requires one file per part:
 
 | File                         | Part                                                |
 | ---------------------------- | --------------------------------------------------- |

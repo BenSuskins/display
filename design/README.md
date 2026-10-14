@@ -18,6 +18,10 @@ the other clips. The model shows the tool holding one clip clear of its ledge.
 The CAD and print files are in `print/`. Read [the assembly guide](ASSEMBLY.md)
 before ordering. The editable source is in [cad/](cad/README.md).
 
+Use [all-parts.stl](print/all-parts.stl) for one upload. It contains the three
+case parts and both clip coupons, spaced 10 mm apart on the print bed.
+Set the units to millimetres. Keep the parts at 100% scale.
+
 The case has three printed parts and an outer size of 120 × 74 × 30 mm. Its
 right border is wider to hold the ribbon channel. The panel geometry follows
 the [Waveshare drawing](https://files.waveshare.com/wiki/4.26inch-e-Paper-HAT/4.26inch_e-Paper_User_Manual.pdf).

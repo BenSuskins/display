@@ -226,6 +226,96 @@
       }
     },
     {
+      "check": "combined STL: five separate printable parts",
+      "passed": true,
+      "evidence": {
+        "connected_parts": 5,
+        "watertight": true,
+        "bounds_mm": [
+          249.2,
+          153.0,
+          28.0
+        ]
+      }
+    },
+    {
+      "check": "combined STL: original geometry",
+      "passed": true,
+      "evidence": {
+        "parts_compared": 5
+      }
+    },
+    {
+      "check": "combined STL: part 1 / part 2 gap",
+      "passed": true,
+      "evidence": {
+        "gap_mm": 10.0
+      }
+    },
+    {
+      "check": "combined STL: part 1 / part 3 gap",
+      "passed": true,
+      "evidence": {
+        "gap_mm": 10.0
+      }
+    },
+    {
+      "check": "combined STL: part 1 / part 4 gap",
+      "passed": true,
+      "evidence": {
+        "gap_mm": 10.8
+      }
+    },
+    {
+      "check": "combined STL: part 1 / part 5 gap",
+      "passed": true,
+      "evidence": {
+        "gap_mm": 10.0
+      }
+    },
+    {
+      "check": "combined STL: part 2 / part 3 gap",
+      "passed": true,
+      "evidence": {
+        "gap_mm": 50.0
+      }
+    },
+    {
+      "check": "combined STL: part 2 / part 4 gap",
+      "passed": true,
+      "evidence": {
+        "gap_mm": 10.8
+      }
+    },
+    {
+      "check": "combined STL: part 2 / part 5 gap",
+      "passed": true,
+      "evidence": {
+        "gap_mm": 42.075
+      }
+    },
+    {
+      "check": "combined STL: part 3 / part 4 gap",
+      "passed": true,
+      "evidence": {
+        "gap_mm": 17.925
+      }
+    },
+    {
+      "check": "combined STL: part 3 / part 5 gap",
+      "passed": true,
+      "evidence": {
+        "gap_mm": 10.0
+      }
+    },
+    {
+      "check": "combined STL: part 4 / part 5 gap",
+      "passed": true,
+      "evidence": {
+        "gap_mm": 10.0
+      }
+    },
+    {
       "check": "front-frame / internal-carrier: assembly",
       "passed": true,
       "evidence": {

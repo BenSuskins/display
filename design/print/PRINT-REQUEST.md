@@ -6,6 +6,10 @@ Please quote one of each of the three case parts, in millimetres:
 - `internal-carrier.stl`
 - `rear-cover.stl`
 
+The alternative `all-parts.stl` contains these three parts and both clip
+coupons in one file. The five parts are separate, with 10 mm gaps.
+Use millimetres and 100% scale. Do not join the parts.
+
 Material: **unfilled PA12 nylon**, MJF preferred.
 Finish: **vapour smoothing**, light grey if available.
 

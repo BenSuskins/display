@@ -8,27 +8,27 @@
   "status": "Fit prototype; no physical validation performed",
   "material": "Unfilled PA12 nylon, MJF preferred",
   "finish": "Vapour smoothing, subject to supplier review",
-  "checks_passed": 67,
+  "checks_passed": 79,
   "files": [
     {
       "path": "ASSEMBLY.md",
-      "bytes": 5561,
-      "sha256": "618a5db2b587d5d6a266693650b855b88574f7a17f0a887ebb2d942f846fe8ac"
+      "bytes": 5754,
+      "sha256": "7a5916ceaa3e7e0719d0be3c070c640cf3d550359d5e0480a88b59fa061f35b0"
     },
     {
       "path": "README.md",
-      "bytes": 2739,
-      "sha256": "1abbcc56e2aadff9c3847773f59e7306ff782f69399712b2c62fe03814811ac9"
+      "bytes": 2950,
+      "sha256": "bfeda32388b5fe4369d85540d7e2cfa24e52489838ed3cb59769c3488c1eb87b"
     },
     {
       "path": "cad/README.md",
-      "bytes": 1195,
-      "sha256": "c2b36676d6e124844df1c5112ae344f4dd8881da046e02f600f4abbb664661b5"
+      "bytes": 1336,
+      "sha256": "a33c5f4970ffd6cc85d48acd522b3a0c33ce7331962ba6cf995495e9fe1bf6d6"
     },
     {
       "path": "cad/case.py",
-      "bytes": 12292,
-      "sha256": "180da9590cbd64c0a69000e7eecc7c2053ff4e50d48037c0a9c575dc784f20e3"
+      "bytes": 13257,
+      "sha256": "a868d5a5f3d584633797caaa511345285085e6dd4d515598a35c46c0823621c5"
     },
     {
       "path": "cad/package.py",
@@ -47,8 +47,8 @@
     },
     {
       "path": "cad/validate.py",
-      "bytes": 6921,
-      "sha256": "0063328c9aa402f0346119865495263df0595077ded60d530a0ef38f5830fa09"
+      "bytes": 8725,
+      "sha256": "6f3907eec803f6f7da3268695ea7b8dec6771106e8ccbb5e311c7bcb53326d16"
     },
     {
       "path": "case-mockup.html",
@@ -57,8 +57,13 @@
     },
     {
       "path": "print/PRINT-REQUEST.md",
-      "bytes": 872,
-      "sha256": "fab27abbce123296baef6c8cd53b4f5786f5b3605eccd570e871e571958c56f4"
+      "bytes": 1068,
+      "sha256": "a7a5b9657374e5237167b61c509672f301763781f314e93f25b53e4e0d429679"
+    },
+    {
+      "path": "print/all-parts.stl",
+      "bytes": 513784,
+      "sha256": "2d35083d5bb88da4a8bb2657ebdd2b43207ef5f2f69c7a0a6d8b2cd10468104e"
     },
     {
       "path": "print/case-assembly.step",
@@ -132,8 +137,8 @@
     },
     {
       "path": "print/validation.json",
-      "bytes": 12977,
-      "sha256": "8d928cb587df2c6925a40245e391ec1bdf6709f23920f68b46a923be91ec0dcd"
+      "bytes": 14767,
+      "sha256": "64527305172d65d53d11339a531299269d8e26e410ab41f75bb6d530dd20481f"
     }
   ]
 }

@@ -4,3 +4,4 @@ node_modules/
 .env*
 plans/
 __pycache__/
+.DS_Store
