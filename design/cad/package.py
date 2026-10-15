@@ -11,13 +11,28 @@ def main():
     report = json.loads((root / "print/validation.json").read_text())
     if report["status"] != "pass":
         raise SystemExit("The CAD checks must pass before the files are packaged.")
-    files = [root / name for name in ["README.md", "ASSEMBLY.md", "case-mockup.html"]]
+    files = [
+        root / name
+        for name in ["README.md", "ASSEMBLY.md", "COST.md", "case-mockup.html"]
+    ]
+    alternative_report = root / "print/low-material/validation.json"
+    if alternative_report.exists():
+        if json.loads(alternative_report.read_text())["status"] != "pass":
+            raise SystemExit("The alternative CAD checks must pass before packaging.")
+        files.extend(
+            root / name
+            for name in [
+                "case-original-separate-stls.zip",
+                "case-low-material-separate-stls.zip",
+            ]
+        )
     for directory in ["cad", "print"]:
         files.extend(
             path
-            for path in (root / directory).iterdir()
+            for path in (root / directory).rglob("*")
             if path.is_file()
-            and path.suffix in {".py", ".txt", ".md", ".step", ".stl", ".json", ".png"}
+            and path.suffix
+            in {".py", ".txt", ".md", ".step", ".stl", ".json", ".png", ".html"}
             and path.name != "manifest.json"
         )
     manifest = {

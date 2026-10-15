@@ -27,8 +27,8 @@ def collision_volume(first, second):
     return round(first.intersect(second).Volume(), 7)
 
 
-def validate(output):
-    parts = build_parts()
+def validate(output, parts=None):
+    parts = build_parts() if parts is None else parts
     all_parts = {**parts, **build_coupons(parts)}
     checks = []
 

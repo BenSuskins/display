@@ -148,7 +148,7 @@ def carrier_beam(dimensions=DEFAULTS) -> cad.Shape:
     return beam.fuse(hook(42, 33.1, 34.5, 4.6, 6.1, 1)).clean()
 
 
-def build_carrier(dimensions=DEFAULTS) -> cad.Shape:
+def carrier_rim(dimensions=DEFAULTS) -> cad.Shape:
     outer = rounded_plate(
         110,
         67,
@@ -165,7 +165,31 @@ def build_carrier(dimensions=DEFAULTS) -> cad.Shape:
         dimensions.carrier_front + 1,
         (dimensions.panel_center, 0),
     )
-    carrier = outer.cut(inner)
+    return outer.cut(inner)
+
+
+def finish_carrier(carrier, dimensions=DEFAULTS) -> cad.Shape:
+    for horizontal in [-1, 1]:
+        for vertical in [-1, 1]:
+            cutter = rounded_plate(24.2, 3.1, 0.5, -0.1, 6.3, (34.1, 32.25))
+            carrier = carrier.cut(reflect(cutter, horizontal, vertical))
+    beam = carrier_beam(dimensions)
+    return combine(
+        carrier,
+        [
+            reflect(beam, horizontal, vertical)
+            for horizontal in [-1, 1]
+            for vertical in [-1, 1]
+        ],
+    ).clean()
+
+
+def build_screen_carrier(dimensions=DEFAULTS) -> cad.Shape:
+    return finish_carrier(carrier_rim(dimensions), dimensions)
+
+
+def build_carrier(dimensions=DEFAULTS) -> cad.Shape:
+    carrier = carrier_rim(dimensions)
     additions = []
     # The rails reach the carrier rim and leave the soldered battery pads accessible.
     for horizontal in [-44, 8]:
@@ -200,23 +224,7 @@ def build_carrier(dimensions=DEFAULTS) -> cad.Shape:
         (35, 29),
     ]:
         carrier = carrier.cut(block((horizontal, vertical, 3.8), (5, 2.8, 9)))
-    cutters = []
-    for horizontal in [-1, 1]:
-        for vertical in [-1, 1]:
-            cutter = rounded_plate(24.2, 3.1, 0.5, -0.1, 6.3, (34.1, 32.25))
-            cutters.append(reflect(cutter, horizontal, vertical))
-    for cutter in cutters:
-        carrier = carrier.cut(cutter)
-    beam = carrier_beam(dimensions)
-    carrier = combine(
-        carrier,
-        [
-            reflect(beam, horizontal, vertical)
-            for horizontal in [-1, 1]
-            for vertical in [-1, 1]
-        ],
-    )
-    return carrier.clean()
+    return finish_carrier(carrier, dimensions)
 
 
 def cover_clip(dimensions=DEFAULTS) -> cad.Shape:

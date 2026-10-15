@@ -12,28 +12,38 @@
   "files": [
     {
       "path": "ASSEMBLY.md",
-      "bytes": 5754,
-      "sha256": "7a5916ceaa3e7e0719d0be3c070c640cf3d550359d5e0480a88b59fa061f35b0"
+      "bytes": 6048,
+      "sha256": "4a3f9082e141882f8e372cca44bbd83aeb3762602e959a28286c9b33c454113c"
+    },
+    {
+      "path": "COST.md",
+      "bytes": 3768,
+      "sha256": "071b82f6950a16041e551c7fd60b099598ff1913a0b7f7bcde0d81dca5e39e2e"
     },
     {
       "path": "README.md",
-      "bytes": 2950,
-      "sha256": "bfeda32388b5fe4369d85540d7e2cfa24e52489838ed3cb59769c3488c1eb87b"
+      "bytes": 3242,
+      "sha256": "d04ed03c247b04f41a90565080a0a019b463e21f9cb1526e0847291ca11e6943"
     },
     {
       "path": "cad/README.md",
-      "bytes": 1336,
-      "sha256": "a33c5f4970ffd6cc85d48acd522b3a0c33ce7331962ba6cf995495e9fe1bf6d6"
+      "bytes": 1630,
+      "sha256": "8ebd4a79cfa7f0e4ead9d7aa9ad5cffd0810efe05e45addb04e4ff24246c5618"
     },
     {
       "path": "cad/case.py",
-      "bytes": 13257,
-      "sha256": "a868d5a5f3d584633797caaa511345285085e6dd4d515598a35c46c0823621c5"
+      "bytes": 13485,
+      "sha256": "cf3eb944767f3fe067f1ce950145259db6659f4834846f8955c3a2f340ef3e45"
+    },
+    {
+      "path": "cad/low_material.py",
+      "bytes": 7918,
+      "sha256": "2a5e4e4ac66f79a5fed97e967872ba71db8d4e7e426f81027d0915ad6d2ac6a6"
     },
     {
       "path": "cad/package.py",
-      "bytes": 2086,
-      "sha256": "f25a5e419f5e70ea78ed02d7cc833c4de6b7d92f24b25ffee3f2f600a55507be"
+      "bytes": 2610,
+      "sha256": "7d467e7e3454ae02a57de9f6f5448823b2974ddd0310ba3736a318dd72e3eb28"
     },
     {
       "path": "cad/requirements.txt",
@@ -47,8 +57,13 @@
     },
     {
       "path": "cad/validate.py",
-      "bytes": 8725,
-      "sha256": "6f3907eec803f6f7da3268695ea7b8dec6771106e8ccbb5e311c7bcb53326d16"
+      "bytes": 8765,
+      "sha256": "4ba2f1b299b5307e9c3684be530eedec6a811934f0b73998c3d1db76dc18b358"
+    },
+    {
+      "path": "case-low-material-separate-stls.zip",
+      "bytes": 121563,
+      "sha256": "df6518e53ba3b9ba2e315f6c3115be65a8999099e02970136a042deb6a6741a0"
     },
     {
       "path": "case-mockup.html",
@@ -56,9 +71,14 @@
       "sha256": "fe7a7d4df3a1b4f773f1b2b7a23ea2161e9a967efc739346a72dda6486223b38"
     },
     {
+      "path": "case-original-separate-stls.zip",
+      "bytes": 105680,
+      "sha256": "b00bedc9312f8c79b024cd3ce3d29c294f28a88278a014d8eff7da69410de6b5"
+    },
+    {
       "path": "print/PRINT-REQUEST.md",
-      "bytes": 1068,
-      "sha256": "a7a5b9657374e5237167b61c509672f301763781f314e93f25b53e4e0d429679"
+      "bytes": 1425,
+      "sha256": "6e6b5e3ed6f546e75ff451bb51bb7d44eca02e15309f009bff2ec829456bb61a"
     },
     {
       "path": "print/all-parts.stl",
@@ -124,6 +144,96 @@
       "path": "print/internal-carrier.stl",
       "bytes": 167584,
       "sha256": "5f5df52536b71665294eb744d0be749b95948da8bbf149c2b5a4535928c6bf94"
+    },
+    {
+      "path": "print/low-material/all-parts.stl",
+      "bytes": 569084,
+      "sha256": "3a419f35135579dce726860fa40489e753f446bc571664a1999304c5f98be66f"
+    },
+    {
+      "path": "print/low-material/case-assembly.step",
+      "bytes": 1438792,
+      "sha256": "6340284a81f176156b1bedda309dd9e10b43e0a7cd36ed1b574ba88ac387acf9"
+    },
+    {
+      "path": "print/low-material/case-exploded.png",
+      "bytes": 226193,
+      "sha256": "da6120c28495feb629993f9a56c9ae7f947fd80e4eac9fe2e6e502e0f11b18f9"
+    },
+    {
+      "path": "print/low-material/case-mockup.html",
+      "bytes": 445344,
+      "sha256": "9f55419a479659acfa50a9d393870a3a05a35e2593bde966fa2862e23bc561d8"
+    },
+    {
+      "path": "print/low-material/case-rear.png",
+      "bytes": 122440,
+      "sha256": "3f3345edbd35dbfedddd3bb0a8f07161d25cfb3ac0213b7dc2051794ff29a835"
+    },
+    {
+      "path": "print/low-material/clip-coupon-cover.step",
+      "bytes": 137120,
+      "sha256": "3a5bae26d9392a1f080a1ed068fe8a8e3eafbc1ff38fb1f9de19b5d16cf86133"
+    },
+    {
+      "path": "print/low-material/clip-coupon-cover.stl",
+      "bytes": 12284,
+      "sha256": "bcb71d0c65bf5fef0f0a64ec7dd094f46bbea3b7a70c1ec7651e0f72fb13fde0"
+    },
+    {
+      "path": "print/low-material/clip-coupon-frame.step",
+      "bytes": 42664,
+      "sha256": "9e7e70acae55d09c04eade23d42f5b1890a8b8794ca8d6b5f8354991a2faf3b3"
+    },
+    {
+      "path": "print/low-material/clip-coupon-frame.stl",
+      "bytes": 2284,
+      "sha256": "82b525bce554d5fe5faca53ac0569457d2759c913ea176642ef44cc398e559dc"
+    },
+    {
+      "path": "print/low-material/comparison.json",
+      "bytes": 614,
+      "sha256": "ee45ac2a21d7bb7d11edafd5af0074e82483577acfcd28c8fc844e3d8d627a93"
+    },
+    {
+      "path": "print/low-material/dimensions.json",
+      "bytes": 586,
+      "sha256": "3a6e05e50c465a49a5686b881d02545c99dbcb4fda594c858ef60fe0c89725db"
+    },
+    {
+      "path": "print/low-material/front-frame.step",
+      "bytes": 532628,
+      "sha256": "c5ee3cbf9b563b5c712f1f1c0febc5c849b1982a363067238b23a493eeb9feb9"
+    },
+    {
+      "path": "print/low-material/front-frame.stl",
+      "bytes": 112084,
+      "sha256": "c81b5b49f126715e0f222c1ce4af8ffbe308a2c56b93f83df4da5e594aba9b8a"
+    },
+    {
+      "path": "print/low-material/internal-carrier.step",
+      "bytes": 277818,
+      "sha256": "2cdd75a3ca5831cf3b37f48a085472547eae3317fd70da0b8357c51da27a2269"
+    },
+    {
+      "path": "print/low-material/internal-carrier.stl",
+      "bytes": 107684,
+      "sha256": "532582d7ca1b66ca2ba5a245bc643e9db86518cdf1cff27aa9b230f6aebc0ee8"
+    },
+    {
+      "path": "print/low-material/rear-cover.step",
+      "bytes": 585631,
+      "sha256": "d3d619b8bb4082d38c02dceccb64aa7aad73608167a75701f046a5666bfa4182"
+    },
+    {
+      "path": "print/low-material/rear-cover.stl",
+      "bytes": 335084,
+      "sha256": "a593d4f10cd445d922b3c6db3e5797d66d852804c48528d06dd07779bb911779"
+    },
+    {
+      "path": "print/low-material/validation.json",
+      "bytes": 18577,
+      "sha256": "22541fd589fad250b74f45c2842b34ec8e1c2d2a318f99781bc837ed40029603"
     },
     {
       "path": "print/rear-cover.step",

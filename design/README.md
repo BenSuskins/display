@@ -22,6 +22,11 @@ Use [all-parts.stl](print/all-parts.stl) for one upload. It contains the three
 case parts and both clip coupons, spaced 10 mm apart on the print bed.
 Set the units to millimetres. Keep the parts at 100% scale.
 
+**For Craftcloud, upload each part separately.** Its rules require one part
+per file. The combined file can increase the quote. Read [the cost guide](COST.md)
+for separate-file packages and an alternative with 25.7% less material.
+Its carrier retains the screen and has no component mounts.
+
 The case has three printed parts and an outer size of 120 × 74 × 30 mm. Its
 right border is wider to hold the ribbon channel. The panel geometry follows
 the [Waveshare drawing](https://files.waveshare.com/wiki/4.26inch-e-Paper-HAT/4.26inch_e-Paper_User_Manual.pdf).

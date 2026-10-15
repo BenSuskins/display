@@ -10,6 +10,12 @@ The alternative `all-parts.stl` contains these three parts and both clip
 coupons in one file. The five parts are separate, with 10 mm gaps.
 Use millimetres and 100% scale. Do not join the parts.
 
+For Craftcloud, upload one part per file. Do not use `all-parts.stl`.
+The `low-material/` directory contains an alternative with 25.7% less
+material. Quote either the original set or the alternative set, not both.
+The alternative carrier is a 1.5 mm screen rim with four clips. It has no
+component mounts. Please review the thinner frame and cover panels.
+
 Material: **unfilled PA12 nylon**, MJF preferred.
 Finish: **vapour smoothing**, light grey if available.
 

@@ -1,0 +1,25 @@
+{
+  "units": "mm",
+  "parts": [
+    {
+      "part": "front-frame",
+      "original_cm3": 32.121,
+      "alternative_cm3": 27.702,
+      "material_reduction_percent": 13.8
+    },
+    {
+      "part": "internal-carrier",
+      "original_cm3": 10.863,
+      "alternative_cm3": 2.429,
+      "material_reduction_percent": 77.6
+    },
+    {
+      "part": "rear-cover",
+      "original_cm3": 18.86,
+      "alternative_cm3": 15.845,
+      "material_reduction_percent": 16.0
+    }
+  ],
+  "total_material_reduction_percent": 25.7,
+  "price_reduction": "Unknown. Get separate-file quotes with the same material and finish."
+}

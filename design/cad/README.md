@@ -28,3 +28,8 @@ It does not need a CDN or a web server.
 Open `design/print/case-assembly.step` in a CAD application to inspect the
 three parts together. The STEP files contain editable boundary geometry.
 The Python source retains the construction parameters.
+
+Run `python design/cad/low_material.py` to export and validate the alternative
+with pockets on the internal faces. It writes separate files and an HTML
+preview to `design/print/low-material/`. It also creates two archives with
+three separate STL files each. Read [the cost guide](../COST.md).

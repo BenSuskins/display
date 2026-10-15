@@ -3,7 +3,10 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
 const mockupUrl = pathToFileURL(
-  path.resolve(__dirname, "../case-mockup.html"),
+  path.resolve(
+    __dirname,
+    process.env.CASE_MOCKUP_PATH || "../case-mockup.html",
+  ),
 ).href;
 
 test("the offline mockup supports assembly and cover removal", async ({

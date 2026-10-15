@@ -15,6 +15,12 @@ Upload `print/all-parts.stl` for all three case parts and both clip coupons
 in one file. The five parts remain separate, with a 10 mm gap on the print
 bed. Set the units to **millimetres**. Keep the scale at **100%**.
 
+Craftcloud requires separate files. Read [the cost guide](COST.md) for a
+lighter alternative and archives that contain only the three case parts.
+
+The instructions below describe the original carrier with component mounts.
+Use the cost guide's assembly changes for the simpler screen carrier.
+
 Use these separate files if the service requires one file per part:
 
 | File                         | Part                                                |
