@@ -1,0 +1,58 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-actions)"
+    labels:
+      - "dependencies"
+    groups:
+      actions-minor:
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "bun"
+    directory: "/apps/server"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-display-server)"
+    labels:
+      - "dependencies"
+    groups:
+      display-server-minor:
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "pip"
+    directory: "/design/cad"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-cad)"
+    labels:
+      - "dependencies"
+    groups:
+      cad-minor:
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "docker"
+    directory: "/apps/server"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-display-server-container)"
+    labels:
+      - "dependencies"
+    groups:
+      display-server-container-minor:
+        update-types:
+          - "minor"
+          - "patch"
