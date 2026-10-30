@@ -1,7 +1,7 @@
 # The Playwright image is pinned to the same version as the playwright package,
 # because it ships the exact browser build that version expects. Bump both
 # together or Chromium will not launch.
-FROM mcr.microsoft.com/playwright:v1.62.1-noble
+FROM mcr.microsoft.com/playwright:v1.64.1-noble
 
 ENV BUN_INSTALL=/usr/local
 RUN apt-get update \
